@@ -52,7 +52,7 @@ class DB():
         self.tables = {}
 
         # Setup your tables
-        self.add_table('users', "id", "username", "password")
+        self.add_table('users', "id", "username", "hashpass")
         
         return
 
@@ -65,7 +65,6 @@ class DB():
 
         return
 
-
     def search_table(self, table_name, target_field_name, target_value):
         '''
             Calls the search table method on an appropriate table
@@ -76,9 +75,14 @@ class DB():
         '''
             Calls the create entry method on the appropriate table
         '''
+
+        if table_name not in self.tables.keys():
+            raise IndexError(f"{table_name} is not in the database")
+
         return self.tables[table_name].create_entry(data)
 
 
 # Our global database
 # Invoke this as needed
 database = DB()
+print(database.get_table())

@@ -39,7 +39,7 @@ port = 8081
 # Turn this off for production
 debug = True
 
-def run_server():    
+def run_server():
     '''
         run_server
         Runs a bottle server
@@ -77,8 +77,8 @@ def manage_db():
 # Add your own here as you see fit
 
 command_list = {
-    'manage_db' : manage_db,
-    'server'       : run_server
+    'manage_db': manage_db,
+    'server': run_server
 }
 
 # The default command if none other is given

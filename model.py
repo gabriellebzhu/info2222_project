@@ -7,6 +7,14 @@
 '''
 import view
 import random
+import sql
+
+import os
+import hashlib
+
+db = sql.SQLDatabase("test.db")
+db.database_setup()
+
 
 # Initialise our views, all arguments are defaults for the template
 page_view = view.View()
@@ -35,6 +43,9 @@ def login_form():
 
 #-----------------------------------------------------------------------------
 
+def register_form():
+    return page_view("register")
+
 # Check the login credentials
 def login_check(username, password):
     '''
@@ -62,6 +73,33 @@ def login_check(username, password):
         return page_view("valid", name=username)
     else:
         return page_view("invalid", reason=err_str)
+
+
+# Register User
+def register_new_user(username, password):
+    global db
+    # By default assume good creds
+    register = True
+
+
+    # if username is in database, error of "USER ALREADY EXISTS"
+    # otherwise, the username is valid!
+
+    # password checks?
+    salt = os.urandom(16)  # 16 bytes of random salt
+
+    salted_pass = password.encode() + salt
+
+    h = hashlib.new('sha256')
+    h.update(salted_pass)
+
+    db.add_user(username=username, password=h.hexdigest(), salt=salt, admin=0)
+
+    if register:
+        return page_view("valid", name=username)
+    else:
+        return page_view("invalid", reason=err_str)
+
 
 #-----------------------------------------------------------------------------
 # About

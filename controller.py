@@ -85,6 +85,17 @@ def get_login_controller():
     '''
     return model.login_form()
 
+# Display the login page
+@get('/register')
+def get_login_controller():
+    '''
+        get_login
+        
+        Serves the login page
+    '''
+    return model.register_form()
+
+
 #-----------------------------------------------------------------------------
 
 # Attempt the login
@@ -103,6 +114,23 @@ def post_login():
     
     # Call the appropriate method
     return model.login_check(username, password)
+
+# # Attempt the register
+@post('/register')
+def post_register():
+    '''
+        post_register
+        
+        Handles register attempts
+        Expects a form containing 'username' and 'password' fields
+    '''
+
+    # Handle the form processing
+    username = request.forms.get('username')
+    password = request.forms.get('password')
+    
+    # Call the appropriate method
+    return model.register_new_user(username, password)
 
 
 

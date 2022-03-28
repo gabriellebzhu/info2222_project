@@ -52,7 +52,7 @@ class DB():
         self.tables = {}
 
         # Setup your tables
-        self.add_table('users', "id", "username", "hashpass")
+        self.add_table('users', "id", "username", "hashpass", "salt")
         
         return
 
@@ -80,6 +80,9 @@ class DB():
             raise IndexError(f"{table_name} is not in the database")
 
         return self.tables[table_name].create_entry(data)
+    
+    def get_table(self):
+        return self.tables
 
 
 # Our global database

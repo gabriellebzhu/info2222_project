@@ -7,6 +7,12 @@ import os
 
 # If you notice anything out of place here, consider it to your advantage and don't spoil the surprise
 
+# END TO END ENCRYPTION
+# 1. alice and bob register themselves in the system
+# 2. after registration, they generate their public key pair in their browser (frontend), and send their public key to the server (stored in the user table)
+# 3. alice want start communicating with bob, needs to create a session key with bob if there is not one. session key used to symmetrically encrypt the actual message. for this session key, it needs to be encrypted with bob's public key. NEED TO ATTACH SIGNATURE USING ALICES PRIVATE KEY
+# 4. bob decrypt the session key with bob private key. bob will decrypt the actual message with the session key. Check that the signature is ok with alice's public key.
+
 class SQLDatabase():
     '''
         Our SQL Database
@@ -48,26 +54,28 @@ class SQLDatabase():
             username TEXT,
             password TEXT,
             salt TEXT,
+            pk TEXT,
             admin INTEGER DEFAULT 0
         )""")
 
         self.commit()
 
         # Add our admin user
-        self.add_user('admin', admin_password, salt=os.urandom(16), admin=1)
+        self.add_user('admin', admin_password, salt=os.urandom(16), "test_key", admin=1)
 
     #-----------------------------------------------------------------------------
     # User handling
     #-----------------------------------------------------------------------------
 
     # Add a user to the database
-    def add_user(self, username, password, salt, admin=0):
+    def add_user(self, username, password, salt, public_key, admin=0):
         sql_cmd = """
                 INSERT INTO Users
-                VALUES(NULL, "{username}", "{password}", "{salt}", {admin})
+                VALUES(NULL, "{username}", "{password}", "{salt}", "{pk}", {admin})
             """
 
-        sql_cmd = sql_cmd.format(username=username, password=password, salt=salt, admin=admin)
+        sql_cmd = sql_cmd.format(username=username, password=password, salt=salt, admin=admin,
+                                 pk=public_key)
 
         print(self.execute(sql_cmd))
         self.commit()
@@ -88,7 +96,60 @@ class SQLDatabase():
         self.execute(sql_query)
 
         # If our query returns
-        if cur.fetchone():
+        if self.cur.fetchone():
+            return True
+        else:
+            return False
+
+    def get_hashpass_from_username(self, username):
+        sql_query = """
+                SELECT password
+                FROM Users
+                WHERE username = '{username}'
+            """
+
+        sql_query = sql_query.format(username=username)
+
+        self.execute(sql_query)
+
+        # If our query returns
+        if self.cur.fetchone():
+            return True
+        else:
+            return False
+
+
+    def get_salt_from_username(self, username):
+        sql_query = """
+                SELECT salt
+                FROM Users
+                WHERE username = '{username}'
+            """
+
+        sql_query = sql_query.format(username=username)
+
+        self.execute(sql_query)
+
+        # If our query returns
+        if self.cur.fetchone():
+            return True
+        else:
+            return False
+
+
+    def check_user_exists(self, username):
+        sql_query = """
+                SELECT 1
+                FROM Users
+                WHERE username = '{username}'
+            """
+
+        sql_query = sql_query.format(username=username)
+
+        self.execute(sql_query)
+
+        # If our query returns
+        if self.cur.fetchone():
             return True
         else:
             return False

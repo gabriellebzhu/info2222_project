@@ -61,13 +61,9 @@ def login_check(username, password):
     # By default assume good creds
     login = True
     
-    if username != "admin": # Wrong Username
-        err_str = "Incorrect Username"
-        login = False
-    
-    if password != "password": # Wrong password
-        err_str = "Incorrect Password"
-        login = False
+
+    print(db.get_hashpass_from_username(username))
+
         
     if login: 
         return page_view("valid", name=username)
@@ -80,25 +76,42 @@ def register_new_user(username, password):
     global db
     # By default assume good creds
     register = True
+    err_str = "Valid!"
 
 
     # if username is in database, error of "USER ALREADY EXISTS"
-    # otherwise, the username is valid!
-
-    # password checks?
-    salt = os.urandom(16)  # 16 bytes of random salt
-
-    salted_pass = password.encode() + salt
-
-    h = hashlib.new('sha256')
-    h.update(salted_pass)
-
-    db.add_user(username=username, password=h.hexdigest(), salt=salt, admin=0)
+    user_exists = db.check_user_exists(username=username)
+    if user_exists:
+        register = False
+        err_str = "Account already exists"
+    elif check_password_security(password, username):
+        register = False
+        err_str = "Password is very easy to guess."
 
     if register:
+        salt = os.urandom(16)  # 16 bytes of random salt
+        salted_pass = password.encode() + salt
+
+        h = hashlib.new('sha256')
+        h.update(salted_pass)
+
+        db.add_user(username=username, password=h.hexdigest(), salt=salt, admin=0)
         return page_view("valid", name=username)
     else:
         return page_view("invalid", reason=err_str)
+
+
+def check_password_security(password, username):
+    if len(password) < 3:
+        return False
+    elif password == username:
+        return False
+    
+    return True
+
+
+def server_key_gen():
+    pass
 
 
 #-----------------------------------------------------------------------------

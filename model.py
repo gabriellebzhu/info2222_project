@@ -7,6 +7,16 @@
 '''
 import view
 import random
+import sql
+
+import os
+import hashlib
+
+from Crypto.PublicKey import RSA
+
+db = sql.SQLDatabase("test.db")
+db.database_setup()
+
 
 # Initialise our views, all arguments are defaults for the template
 page_view = view.View()
@@ -31,9 +41,14 @@ def login_form():
         login_form
         Returns the view for the login_form
     '''
-    return page_view("login")
+    # data = {"to_display":"HI, how are you"}
+    return page_view("login", data=get_server_public_key())
 
 #-----------------------------------------------------------------------------
+
+def register_form():
+    return page_view("register")
+
 
 # Check the login credentials
 def login_check(username, password):
@@ -49,19 +64,68 @@ def login_check(username, password):
 
     # By default assume good creds
     login = True
-    
-    if username != "admin": # Wrong Username
-        err_str = "Incorrect Username"
-        login = False
-    
-    if password != "password": # Wrong password
-        err_str = "Incorrect Password"
-        login = False
-        
+
+    print(db.get_hashpass_from_username(username))
+
     if login: 
         return page_view("valid", name=username)
     else:
+        return page_view("invalid", reason="bad login")
+
+
+# Register User
+def register_new_user(username, password, pk="tmp"):
+    global db
+    # By default assume good creds
+    register = True
+    err_str = "Valid!"
+
+
+    # if username is in database, error of "USER ALREADY EXISTS"
+    user_exists = db.check_user_exists(username=username)
+    if user_exists:
+        register = False
+        err_str = "Account already exists"
+    elif username.isempty():
+        register = False
+        err_str = "No username provided"
+    elif not check_password_security(password, username):
+        register = False
+        err_str = "Password is very easy to guess."
+
+    if register:
+        salt = os.urandom(16)  # 16 bytes of random salt
+        salted_pass = password.encode() + salt
+
+        h = hashlib.new('sha256')
+        h.update(salted_pass)
+
+        db.add_user(username=username, password=h.hexdigest(), salt=salt, public_key=pk, admin=0)
+        return page_view("valid", name=username)
+    else:
         return page_view("invalid", reason=err_str)
+
+
+def check_password_security(password, username):
+    if len(password) < 3:
+        return False
+    elif password == username:
+        return False
+    
+    return True
+
+
+def server_key_gen():
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    file_out = open("key/private.pem", "wb")
+    file_out.write(private_key)
+    file_out.close()
+
+    public_key = key.publickey().export_key()
+    file_out = open("key/public.pem", "wb")
+    file_out.write(public_key)
+    file_out.close()
 
 #-----------------------------------------------------------------------------
 # About
@@ -111,3 +175,11 @@ def handle_errors(error):
     error_type = error.status_line
     error_msg = error.body
     return page_view("error", error_type=error_type, error_msg=error_msg)
+
+
+def get_server_public_key():
+    key = "none"
+    with open('key/server_public.pem', 'r') as f:
+        key = f.read()
+
+    return key

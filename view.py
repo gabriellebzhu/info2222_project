@@ -4,6 +4,7 @@
 #-----------------------------------------------------------------------------
 
 import string
+from bottle import SimpleTemplate
 
 class View():
     '''
@@ -65,7 +66,7 @@ class View():
         file = open(path, 'r')
         text = ""
         for line in file:
-            text+= line
+            text += line
         file.close()
         return text
 
@@ -101,9 +102,11 @@ class View():
             :: template :: The template to use
             :: kwargs :: A dictionary of key value pairs to pass to the template
         '''
-        template = string.Template(template)
-        template = template.safe_substitute(**kwargs)
-        return  template
+        # template = template(template)
+        # template = template.safe_substitute(**kwargs)
+        template = SimpleTemplate(template)
+        template = template.render(**kwargs)
+        return template
 
 
     def global_render(self, template):

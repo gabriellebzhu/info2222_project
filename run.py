@@ -16,6 +16,8 @@
 import os
 import sys
 from bottle import run
+import hashlib
+
 
 #-----------------------------------------------------------------------------
 # You may eventually wish to put these in their own directories and then load 
@@ -39,7 +41,7 @@ port = 8081
 # Turn this off for production
 debug = True
 
-def run_server():    
+def run_server():
     '''
         run_server
         Runs a bottle server
@@ -57,19 +59,22 @@ def manage_db():
     '''
     pass
 
-"""
-import sql
-    
-def manage_db():
-    '''
-        manage_db
-        Starts up and re-initialises an SQL databse for the server
-    '''
-    database_args = ":memory:" # Currently runs in RAM, might want to change this to a file if you use it
-    sql_db = sql.SQLDatabase(database_args=database_args)
 
-    return
-"""
+# def init_users(database):
+#     username = "admin"
+#     password = "password"
+#     salt = os.urandom(16)  # 16 bytes of random salt
+
+#     salted_pass = password.encode() + salt
+
+#     h = hashlib.new('sha256')
+#     h.update(salted_pass)
+
+#     data = [0, username, h.hexdigest(), salt]
+
+#     database.create_table_entry("users", data)
+
+
 
 #-----------------------------------------------------------------------------
 
@@ -77,8 +82,8 @@ def manage_db():
 # Add your own here as you see fit
 
 command_list = {
-    'manage_db' : manage_db,
-    'server'       : run_server
+    'manage_db': manage_db,
+    'server': run_server
 }
 
 # The default command if none other is given
@@ -106,3 +111,7 @@ def run_commands(args):
 #-----------------------------------------------------------------------------
 
 run_commands(sys.argv)
+# db = manage_db()
+# init_users(db)
+# print(db.search_table("users", "username", "admin"))
+

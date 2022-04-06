@@ -12,6 +12,8 @@ import sql
 import os
 import hashlib
 
+from Crypto.PublicKey import RSA
+
 db = sql.SQLDatabase("test.db")
 db.database_setup()
 
@@ -39,12 +41,14 @@ def login_form():
         login_form
         Returns the view for the login_form
     '''
-    return page_view("login")
+    # data = {"to_display":"HI, how are you"}
+    return page_view("login", data=get_server_public_key())
 
 #-----------------------------------------------------------------------------
 
 def register_form():
     return page_view("register")
+
 
 # Check the login credentials
 def login_check(username, password):
@@ -60,19 +64,17 @@ def login_check(username, password):
 
     # By default assume good creds
     login = True
-    
 
     print(db.get_hashpass_from_username(username))
 
-        
     if login: 
         return page_view("valid", name=username)
     else:
-        return page_view("invalid", reason=err_str)
+        return page_view("invalid", reason="bad login")
 
 
 # Register User
-def register_new_user(username, password):
+def register_new_user(username, password, pk="tmp"):
     global db
     # By default assume good creds
     register = True
@@ -84,7 +86,10 @@ def register_new_user(username, password):
     if user_exists:
         register = False
         err_str = "Account already exists"
-    elif check_password_security(password, username):
+    elif username.isempty():
+        register = False
+        err_str = "No username provided"
+    elif not check_password_security(password, username):
         register = False
         err_str = "Password is very easy to guess."
 
@@ -95,7 +100,7 @@ def register_new_user(username, password):
         h = hashlib.new('sha256')
         h.update(salted_pass)
 
-        db.add_user(username=username, password=h.hexdigest(), salt=salt, admin=0)
+        db.add_user(username=username, password=h.hexdigest(), salt=salt, public_key=pk, admin=0)
         return page_view("valid", name=username)
     else:
         return page_view("invalid", reason=err_str)
@@ -111,8 +116,16 @@ def check_password_security(password, username):
 
 
 def server_key_gen():
-    pass
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    file_out = open("key/private.pem", "wb")
+    file_out.write(private_key)
+    file_out.close()
 
+    public_key = key.publickey().export_key()
+    file_out = open("key/public.pem", "wb")
+    file_out.write(public_key)
+    file_out.close()
 
 #-----------------------------------------------------------------------------
 # About
@@ -162,3 +175,11 @@ def handle_errors(error):
     error_type = error.status_line
     error_msg = error.body
     return page_view("error", error_type=error_type, error_msg=error_msg)
+
+
+def get_server_public_key():
+    key = "none"
+    with open('key/server_public.pem', 'r') as f:
+        key = f.read()
+
+    return key

@@ -18,6 +18,7 @@ import sys
 from bottle import run
 import hashlib
 
+
 #-----------------------------------------------------------------------------
 # You may eventually wish to put these in their own directories and then load 
 # Each file separately
@@ -27,7 +28,6 @@ import hashlib
 import model
 import view
 import controller
-from no_sql_db import DB, Table
 
 #-----------------------------------------------------------------------------
 
@@ -60,21 +60,21 @@ def manage_db():
     pass
 
 
-def init_users(database):
-    username = "admin"
-    password = "password"
-    salt = os.urandom(16)  # 16 bytes of random salt
+# def init_users(database):
+#     username = "admin"
+#     password = "password"
+#     salt = os.urandom(16)  # 16 bytes of random salt
 
-    salted_pass = password.encode() + salt
+#     salted_pass = password.encode() + salt
 
-    h = hashlib.new('sha256')
-    h.update(salted_pass)
+#     h = hashlib.new('sha256')
+#     h.update(salted_pass)
 
-    data = [0, username, h.hexdigest(), salt]
+#     data = [0, username, h.hexdigest(), salt]
 
-    database.create_table_entry("users", data)
+#     database.create_table_entry("users", data)
 
-    
+
 
 #-----------------------------------------------------------------------------
 

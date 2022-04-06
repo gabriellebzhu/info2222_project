@@ -3,6 +3,17 @@ Login with a username and password
 </p>
 
 <p>
+    from html: {{data}}
+</p>
+
+<p id="testing">
+</p>
+
+<p id="testing2">
+</p>
+
+
+<p>
     <form action="/login" method="post">
         Username: <input name="username" type="text" />
     </br>
@@ -11,5 +22,15 @@ Login with a username and password
         <input value="Login" type="submit" />
     </form>
 </p>
+
+<script type="text/javascript"> window.data = "{{!data}}" </script>
+<script src="js/bundle.js">
+</script>
+
+<!-- <script>
+    document.getElementById("testing").innerHTML = "SCRIPT IN HTML:" + "{{data}}";
+</script> -->
+
+
 </center>
 

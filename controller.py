@@ -12,6 +12,7 @@ import model
 # Static file paths
 #-----------------------------------------------------------------------------
 
+
 # Allow image loading
 @route('/img/<picture:path>')
 def serve_pictures(picture):
@@ -27,6 +28,7 @@ def serve_pictures(picture):
     return static_file(picture, root='static/img/')
 
 #-----------------------------------------------------------------------------
+
 
 # Allow CSS
 @route('/css/<css:path>')
@@ -44,6 +46,7 @@ def serve_css(css):
 
 #-----------------------------------------------------------------------------
 
+
 # Allow javascript
 @route('/js/<js:path>')
 def serve_js(js):
@@ -58,9 +61,11 @@ def serve_js(js):
     '''
     return static_file(js, root='static/js/')
 
-#-----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 # Pages
 #-----------------------------------------------------------------------------
+
 
 # Redirect to login
 @get('/')
@@ -75,28 +80,31 @@ def get_index():
 
 #-----------------------------------------------------------------------------
 
+
 # Display the login page
 @get('/login')
 def get_login_controller():
     '''
         get_login
-        
+
         Serves the login page
     '''
     return model.login_form()
 
+
 # Display the login page
 @get('/register')
-def get_login_controller():
+def get_register_controller():
     '''
         get_login
-        
+
         Serves the login page
     '''
     return model.register_form()
 
 
 #-----------------------------------------------------------------------------
+
 
 # Attempt the login
 @post('/login')
@@ -115,7 +123,8 @@ def post_login():
     # Call the appropriate method
     return model.login_check(username, password)
 
-# # Attempt the register
+
+# Attempt the register
 @post('/register')
 def post_register():
     '''
@@ -133,8 +142,8 @@ def post_register():
     return model.register_new_user(username, password)
 
 
-
 #-----------------------------------------------------------------------------
+
 
 @get('/about')
 def get_about():
@@ -144,16 +153,21 @@ def get_about():
         Serves the about page
     '''
     return model.about()
+
+
 #-----------------------------------------------------------------------------
+
 
 # Help with debugging
 @post('/debug/<cmd:path>')
 def post_debug(cmd):
     return model.debug(cmd)
 
+
 #-----------------------------------------------------------------------------
+
 
 # 404 errors, use the same trick for other types of errors
 @error(404)
-def error(error): 
+def error(error):
     return model.handle_errors(error)

@@ -61,7 +61,7 @@ class SQLDatabase():
         self.commit()
 
         # Add our admin user
-        self.add_user('admin', admin_password, salt=os.urandom(16), "test_key", admin=1)
+        self.add_user('admin', admin_password, salt=os.urandom(16), public_key="test_key", admin=1)
 
     #-----------------------------------------------------------------------------
     # User handling

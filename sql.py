@@ -68,7 +68,7 @@ class SQLDatabase():
             self.execute("""CREATE TABLE Friends(
                 friend_id INTEGER PRIMARY KEY,
                 user_id1 INTEGER,
-                user_id2 INTEGER,
+                user_id2 INTEGER
             )""")
 
             self.commit()
@@ -179,7 +179,6 @@ class SQLDatabase():
             return False
         user_id1 = self.cur.fetchone()[0]
 
-
         self.execute(user_id_2_cmd)
         if not self.cur.fetchone():
             return False
@@ -190,6 +189,48 @@ class SQLDatabase():
         self.execute(insert_friends)
         self.commit()
         return True
+
+    def get_one_way_friends(self, username):
+        """
+            Get the usernames of all of username's friends (who may or may not consider
+            username a friend as well).
+
+            :return: list of friends' usernames as strings
+        """
+        friend_ids_cmd = """SELECT F.Username AS FriendUsername
+                            FROM Users AS U
+                            JOIN Friends AS UtoF ON UtoF.user_id1 = U.ID
+                            JOIN Users AS F ON F.id = UtoF.user_id2
+                            where U.username = '{username}' """
+
+        friend_ids_cmd = friend_ids_cmd.format(username=username)
+
+        self.execute(friend_ids_cmd)
+        friends = [friend[0] for friend in self.cur.fetchall()]
+        if not friends:
+            return None
+
+        return friends
+
+    def get_mutual_friends(self, username):
+        """
+            Get the usernames of all of username's friends who do consider
+            username a friend as well. (IN PROGRESS)
+        """
+        friend_ids_cmd = """SELECT U.id UserID, U.username AS Username, F.Username AS FriendUsername
+                            FROM Users AS U
+                            JOIN Friends AS UtoF ON UtoF.user_id1 = U.id
+                            JOIN Users AS F ON F.id = UtoF.user_id2
+                            WHERE U.username = "{username}";
+                            """
+
+        friend_ids_cmd = friend_ids_cmd.format(username=username)
+
+        self.execute(friend_ids_cmd)
+        if not self.cur.fetchall():
+            return None
+
+        return self.cur.fetchall()
 
     def peek(self):
         sql_query = """

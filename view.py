@@ -32,7 +32,7 @@ class View():
         return self.load_and_render(*args, **kwargs)
 
 
-    def load_and_render(self, filename, header="header", tailer="tailer", **kwargs):
+    def load_and_render(self, filename, header="header", tailer="tailer", ext='.html', **kwargs):
         ''' 
             Loads and renders templates
 
@@ -41,9 +41,11 @@ class View():
             :: tailer :: Tailer template to use
             :: kwargs :: Keyword arguments to pass
         '''
-        body_template = self.load_template(filename)
         header_template = self.load_template(header)
         tailer_template = self.load_template(tailer)
+        self.template_extension = ext
+        body_template = self.load_template(filename)
+        self.template_extension = '.html'
 
         rendered_template = self.render(
             body_template=body_template, 

@@ -127,10 +127,10 @@ def check_password_security(password, username):
 
 def friend_list(username):
     if username:
-        return page_view("friends", username=username)
+        friends = db.get_one_way_friends(username)
+        return page_view("populate/populateFriends", ext=".tpl", username=username, friend_usernames=friends)
     else:
         return page_view("invalid", reason="Login before chatting with others!")
-    
 
 
 def server_key_gen():
@@ -203,6 +203,5 @@ def get_server_public_key():
         key = f.read()
         key = key.split('\n')
         key = '\\\n'.join(key)
-        print(key)
 
     return key

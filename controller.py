@@ -173,6 +173,7 @@ def restricted_area():
     return model.friend_list(username)
 
 
+
 # -----------------------------------------------------------------------------
 
 

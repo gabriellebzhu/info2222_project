@@ -5,12 +5,14 @@
     It should exist as a separate layer to any database or data structure that you might be using
     Nothing here should be stateful, if it's stateful let the database handle it
 '''
+from operator import truediv
 import view
 import random
 import sql
 
 import os
-import hashlib
+
+import sec_helper as sec
 
 from Crypto.PublicKey import RSA
 
@@ -61,16 +63,23 @@ def login_check(username, password):
 
         Returns either a view for valid credentials, or a view for invalid credentials
     '''
+    message = "The username or password you entered was incorrect"
 
     # By default assume good creds
     login = True
 
-    print(db.get_hashpass_from_username(username))
-
-    if login: 
-        return page_view("valid", name=username)
+    if not db.check_user_exists(username=username):
+        login = False
     else:
-        return page_view("invalid", reason="bad login")
+        salt = db.get_salt_from_username(username)
+        hashed = sec.hash_the_pass(password, salt)
+        if not db.check_credentials(username, hashed):
+            login = False
+
+    if login:
+        return True, page_view("valid", name=username)
+    else:
+        return False, page_view("invalid", reason=message)
 
 
 # Register User
@@ -86,7 +95,7 @@ def register_new_user(username, password, pk="tmp"):
     if user_exists:
         register = False
         err_str = "Account already exists"
-    elif username.isempty():
+    elif not username:
         register = False
         err_str = "No username provided"
     elif not check_password_security(password, username):
@@ -95,12 +104,8 @@ def register_new_user(username, password, pk="tmp"):
 
     if register:
         salt = os.urandom(16)  # 16 bytes of random salt
-        salted_pass = password.encode() + salt
-
-        h = hashlib.new('sha256')
-        h.update(salted_pass)
-
-        db.add_user(username=username, password=h.hexdigest(), salt=salt, public_key=pk, admin=0)
+        hashed = sec.hash_the_pass(password, salt)
+        db.add_user(username=username, password=hashed, salt=salt, public_key=pk, admin=0)
         return page_view("valid", name=username)
     else:
         return page_view("invalid", reason=err_str)
@@ -115,6 +120,19 @@ def check_password_security(password, username):
     return True
 
 
+# -----------------------------------------------------------------------------
+# FRIENDS
+# -----------------------------------------------------------------------------
+
+
+def friend_list(username):
+    if username:
+        return page_view("friends", username=username)
+    else:
+        return page_view("invalid", reason="Login before chatting with others!")
+    
+
+
 def server_key_gen():
     key = RSA.generate(2048)
     private_key = key.export_key()
@@ -127,9 +145,11 @@ def server_key_gen():
     file_out.write(public_key)
     file_out.close()
 
-#-----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 # About
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 def about():
     '''
@@ -181,5 +201,8 @@ def get_server_public_key():
     key = "none"
     with open('key/server_public.pem', 'r') as f:
         key = f.read()
+        key = key.split('\n')
+        key = '\\\n'.join(key)
+        print(key)
 
     return key

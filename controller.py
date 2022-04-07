@@ -4,9 +4,10 @@
     maybe some simple program logic
 '''
 
-from bottle import route, get, post, error, request, static_file
+from bottle import route, get, post, error, request, response, static_file
 
 import model
+import sec_helper as sec
 
 #-----------------------------------------------------------------------------
 # Static file paths
@@ -64,7 +65,7 @@ def serve_js(js):
 
 # -----------------------------------------------------------------------------
 # Pages
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 # Redirect to login
@@ -78,7 +79,7 @@ def get_index():
     '''
     return model.index()
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 # Display the login page
@@ -103,7 +104,7 @@ def get_register_controller():
     return model.register_form()
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 # Attempt the login
@@ -119,9 +120,16 @@ def post_login():
     # Handle the form processing
     username = request.forms.get('username')
     password = request.forms.get('password')
+    print(username)
+    print(password)
     
     # Call the appropriate method
-    return model.login_check(username, password)
+    check = model.login_check(username, password)
+
+    if check[0]:
+        response.set_cookie("account", username, secret=sec.COOKIE_SECRET)
+
+    return check[1]
 
 
 # Attempt the register
@@ -137,25 +145,35 @@ def post_register():
     # Handle the form processing
     username = request.forms.get('username')
     password = request.forms.get('password')
-    
+
     # Call the appropriate method
     return model.register_new_user(username, password)
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 @get('/about')
 def get_about():
     '''
         get_about
-        
+
         Serves the about page
     '''
     return model.about()
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
+@route('/friends')
+def restricted_area():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    return model.friend_list(username)
+
+
+# -----------------------------------------------------------------------------
 
 
 # Help with debugging
@@ -164,7 +182,7 @@ def post_debug(cmd):
     return model.debug(cmd)
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 # 404 errors, use the same trick for other types of errors

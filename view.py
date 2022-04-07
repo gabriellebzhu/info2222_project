@@ -102,8 +102,6 @@ class View():
             :: template :: The template to use
             :: kwargs :: A dictionary of key value pairs to pass to the template
         '''
-        # template = template(template)
-        # template = template.safe_substitute(**kwargs)
         template = SimpleTemplate(template)
         template = template.render(**kwargs)
         return template

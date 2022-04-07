@@ -1,6 +1,8 @@
 import sqlite3
 import os
 
+import sec_helper as sec
+
 # This class is a simple handler for all of our SQL database actions
 # Practicing a good separation of concerns, we should only ever call
 # These functions from our models
@@ -30,7 +32,6 @@ class SQLDatabase():
     def execute(self, sql_string):
         out = None
         for string in sql_string.split(";"):
-            print(sql_string)
             out = self.cur.execute(string)
         return out
 
@@ -39,33 +40,48 @@ class SQLDatabase():
         self.conn.commit()
 
     #-----------------------------------------------------------------------------
-    
+
     # Sets up the database
     # Default admin password
     def database_setup(self, admin_password='admin'):
+        # # Clear the database if needed
+        # self.execute("DROP TABLE IF EXISTS Users")
+        # self.commit()
 
-        # Clear the database if needed
-        self.execute("DROP TABLE IF EXISTS Users")
-        self.commit()
+        self.cur.execute("""SELECT count(name) FROM sqlite_master WHERE type='table' AND name='Users';""")
+        if self.cur.fetchone()[0] == 0:
+            # Create the users table
+            self.execute("""CREATE TABLE Users(
+                id INTEGER PRIMARY KEY,
+                username TEXT,
+                password TEXT,
+                salt TEXT,
+                pk TEXT,
+                admin INTEGER DEFAULT 0
+            )""")
 
-        # Create the users table
-        self.execute("""CREATE TABLE Users(
-            id INTEGER PRIMARY KEY,
-            username TEXT,
-            password TEXT,
-            salt TEXT,
-            pk TEXT,
-            admin INTEGER DEFAULT 0
-        )""")
+            self.commit()
+        
+        self.cur.execute("""SELECT count(name) FROM sqlite_master WHERE type='table' AND name='Friends';""")
+        if self.cur.fetchone()[0] == 0:
+            # Create the users table
+            self.execute("""CREATE TABLE Friends(
+                friend_id INTEGER PRIMARY KEY,
+                user_id1 INTEGER,
+                user_id2 INTEGER,
+            )""")
 
-        self.commit()
+            self.commit()
+
+        salt = os.urandom(16)
+        hashed = sec.hash_the_pass(admin_password, salt)
 
         # Add our admin user
-        self.add_user('admin', admin_password, salt=os.urandom(16), public_key="test_key", admin=1)
+        self.add_user('admin', hashed, salt=salt, public_key="test_key", admin=1)
 
-    #-----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
     # User handling
-    #-----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
 
     # Add a user to the database
     def add_user(self, username, password, salt, public_key, admin=0):
@@ -73,15 +89,15 @@ class SQLDatabase():
                 INSERT INTO Users
                 VALUES(NULL, "{username}", "{password}", "{salt}", "{pk}", {admin})
             """
-
+        salt = sec.salt_to_string(salt)
         sql_cmd = sql_cmd.format(username=username, password=password, salt=salt, admin=admin,
                                  pk=public_key)
 
-        print(self.execute(sql_cmd))
+        self.execute(sql_cmd)
         self.commit()
         return True
 
-    #-----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
 
     # Check login credentials
     def check_credentials(self, username, password):
@@ -114,10 +130,9 @@ class SQLDatabase():
 
         # If our query returns
         if self.cur.fetchone():
-            return True
+            return self.cur.fetchone()[0]
         else:
             return False
-
 
     def get_salt_from_username(self, username):
         sql_query = """
@@ -130,12 +145,9 @@ class SQLDatabase():
 
         self.execute(sql_query)
 
-        # If our query returns
-        if self.cur.fetchone():
-            return True
-        else:
-            return False
-
+        salt = self.cur.fetchone()[0]
+        salt = sec.string_to_salt(salt)
+        return salt
 
     def check_user_exists(self, username):
         sql_query = """
@@ -154,6 +166,30 @@ class SQLDatabase():
         else:
             return False
 
+    # -----------------------------------------------------------------------------
+    # Friend Handling
+    # -----------------------------------------------------------------------------
+
+    def add_friend(self, username, friend_username):
+        user_id_1_cmd = f"SELECT id FROM Users WHERE username = '{username}'"
+        user_id_2_cmd = f"SELECT id FROM Users WHERE username = '{friend_username}'"
+
+        self.execute(user_id_1_cmd)
+        if not self.cur.fetchone():
+            return False
+        user_id1 = self.cur.fetchone()[0]
+
+
+        self.execute(user_id_2_cmd)
+        if not self.cur.fetchone():
+            return False
+        user_id2 = self.cur.fetchone()[0]
+
+        insert_friends = f"INSERT INTO Friends VALUES(NULL, '{user_id1}', '{user_id2}');"
+
+        self.execute(insert_friends)
+        self.commit()
+        return True
 
     def peek(self):
         sql_query = """

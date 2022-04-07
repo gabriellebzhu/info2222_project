@@ -1,13 +1,40 @@
-var forge = require('node-forge');
+// var forge = require('node-forge');
+// var pk;
 
-window.onload=function(){
-    // Now you can access to myVar1 directly
-    console.log(data);
-    var x = document.getElementById("testing");
-    x.innerHTML = "SCRIPT IN js:" + data;
+// var pk = function(){
+//     pk = forge.pki.publicKeyFromPem(data);
+//     return pk;
+// }
 
-    pk = forge.pki.publicKeyFromPem
-};
+
+// window.onload=function(){
+//     pk()
+// };
+
+// var form = document.getElementById('login-form');
+// form.addEventListener("submit", function (event) {
+//     event.preventDefault();
+
+//     var pass = form.elements['password']
+//     var user = form.elements['username']
+
+//     if (pass == '') {
+//         console.log("AAAHH");
+//     } else if (user == '') {
+//         console.log("AAAHH");
+//     }
+
+//     pass = pk.encrypt(pass)
+//     console.log(pass)
+//     document.getElementById('password').value = pass
+
+//     user = pk.encrypt(user)
+//     console.log(pass)
+//     document.getElementById('username').value = user
+
+//     form.submit()
+// });
+
 
 
 // document.getElementById("testing").innerHTML = keys.privateKey;

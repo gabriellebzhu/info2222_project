@@ -41,6 +41,9 @@ class SQLDatabase():
         self.conn.commit()
 
     # -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+    # Setup 
+    # -----------------------------------------------------------------------------
 
     # Sets up the database
     # Default admin password
@@ -49,36 +52,32 @@ class SQLDatabase():
         # self.execute("DROP TABLE IF EXISTS Users")
         # self.commit()
 
-        self.cur.execute("""SELECT count(name) FROM sqlite_master WHERE type='table' AND name='Users';""")
-        if self.cur.fetchone()[0] == 0:
-            # Create the users table
-            self.execute("""CREATE TABLE Users(
-                id INTEGER PRIMARY KEY,
-                username TEXT,
-                password TEXT,
-                salt TEXT,
-                pk TEXT,
-                admin INTEGER DEFAULT 0
-            )""")
+        user_cols = """id INTEGER PRIMARY KEY, username TEXT, password TEXT,
+                       salt TEXT, pk TEXT, admin INTEGER DEFAULT 0"""
+        self.create_table("Users", user_cols)
 
-            self.commit()
-        
-        self.cur.execute("""SELECT count(name) FROM sqlite_master WHERE type='table' AND name='Friends';""")
-        if self.cur.fetchone()[0] == 0:
-            # Create the users table
-            self.execute("""CREATE TABLE Friends(
-                friend_id INTEGER,
-                user_id1 INTEGER,
-                user_id2 INTEGER
-            )""")
+        friends_cols = """friend_id INTEGER, user_id1 INTEGER, user_id2 INTEGER"""
+        self.create_table("Friends", friends_cols)
 
-            self.commit()
-
-        salt = os.urandom(16)
-        hashed = sec.hash_the_pass(admin_password, salt)
+        chats_cols = """friend_id INTEGER, sender_username TEXT, message TEXT"""
+        self.create_table("Chats", chats_cols)
 
         # Add our admin user
+        salt = os.urandom(16)
+        hashed = sec.hash_the_pass(admin_password, salt)
         self.add_user('admin', hashed, salt=salt, public_key="test_key", admin=1)
+
+    def create_table(self, name, columns):
+        self.cur.execute("""SELECT count(name)
+                            FROM sqlite_master WHERE type='table'
+                            AND name='{name}';""".format(name=name))
+        if self.cur.fetchone()[0] == 0:
+            # Create the users table
+            self.execute("""CREATE TABLE {name}(
+                {columns}
+            )""".format(name=name, columns=columns))
+
+            self.commit()
 
     # -----------------------------------------------------------------------------
     # User handling

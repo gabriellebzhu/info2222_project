@@ -77,7 +77,7 @@ def login_check(username, password):
             login = False
 
     if login:
-        return True, page_view("valid", name=username)
+        return True, page_view("valid", name=username, is_register="false")
     else:
         return False, page_view("invalid", reason=message)
 
@@ -107,7 +107,7 @@ def register_new_user(username, password, pk="tmp"):
         hashed = sec.hash_the_pass(password, salt)
         db.add_user(username=username, password=hashed, salt=salt,
                     public_key=pk, admin=0)
-        return page_view("valid", name=username)
+        return page_view("valid", name=username, is_register="true")
     else:
         return page_view("invalid", reason=err_str)
 

@@ -4,18 +4,28 @@
     maybe some simple program logic
 '''
 
-from bottle import route, get, post, error, request, response, static_file
 
+from re import S
+import bottle
+from bottle import route, get, post, error, request, response, static_file, hook
 import model
 import sec_helper as sec
+import json
 
-#-----------------------------------------------------------------------------
+app = bottle.Bottle()
+
+
+@app.hook('after_request')
+def enable_cors():
+    response.headers['Access-Control-Allow-Origin'] = '*'
+
+# -----------------------------------------------------------------------------
 # Static file paths
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 # Allow image loading
-@route('/img/<picture:path>')
+@app.route('/img/<picture:path>')
 def serve_pictures(picture):
     '''
         serve_pictures
@@ -32,7 +42,7 @@ def serve_pictures(picture):
 
 
 # Allow CSS
-@route('/css/<css:path>', name='static')
+@app.route('/css/<css:path>', name='static')
 def serve_css(css):
     '''
         serve_css
@@ -49,7 +59,7 @@ def serve_css(css):
 
 
 # Allow javascript
-@route('/js/<js:path>')
+@app.route('/js/<js:path>')
 def serve_js(js):
     '''
         serve_js
@@ -69,8 +79,8 @@ def serve_js(js):
 
 
 # Redirect to login
-@get('/')
-@get('/home')
+@app.get('/')
+@app.get('/home')
 def get_index():
     '''
         get_index
@@ -83,7 +93,7 @@ def get_index():
 
 
 # Display the login page
-@get('/login')
+@app.get('/login')
 def get_login_controller():
     '''
         get_login
@@ -94,7 +104,7 @@ def get_login_controller():
 
 
 # Display the login page
-@get('/register')
+@app.get('/register')
 def get_register_controller():
     '''
         get_login
@@ -108,7 +118,7 @@ def get_register_controller():
 
 
 # Attempt the login
-@post('/login')
+@app.post('/login')
 def post_login():
     '''
         post_login
@@ -116,24 +126,50 @@ def post_login():
         Handles login attempts
         Expects a form containing 'username' and 'password' fields
     '''
-
     # Handle the form processing
-    username = request.forms.get('username')
-    password = request.forms.get('password')
+    username = request.json.get('username')
+    password = request.json.get('password')
+    user_pk = request.json.get('user_pk')
     print(username)
     print(password)
+    print(user_pk)
     
     # Call the appropriate method
     check = model.login_check(username, password)
 
     if check[0]:
+        print("ok!")
+        print(check[1])
         response.set_cookie("account", username, secret=sec.COOKIE_SECRET)
+        responding_msg = {'message': 'successful login', 'success':'1'}
 
-    return check[1]
+    else:
+        responding_msg = {'message': 'bad login', 'success':'0'}
+
+    return responding_msg
+
+
+# @post('/get_user_pk_json')
+# def get_post_json():
+#     data = request.get_json()
+#     print("\n\n\n-------------------\n" + data)
+#     response.content_type = 'application/json'
+
+#     return data
+
+@app.route('/_get_user_pk_json', methods=['POST', 'GET'])
+def test():
+    output = request.get_json()
+    print(output)  # This is the output that was stored in the JSON within the browser
+    print(type(output))
+    result = json.loads(output)  # this converts the json output to a python dictionary
+    print(result)  # Printing the new dictionary
+    print(type(result))  # this shows the json converted as a python dictionary
+    return result
 
 
 # Attempt the register
-@post('/register')
+@app.post('/register')
 def post_register():
     '''
         post_register
@@ -153,7 +189,7 @@ def post_register():
 # -----------------------------------------------------------------------------
 
 
-@get('/about')
+@app.get('/about')
 def get_about():
     '''
         get_about
@@ -166,14 +202,14 @@ def get_about():
 # -----------------------------------------------------------------------------
 
 
-@route('/friends')
+@app.route('/friends')
 def get_friends():
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
 
     return model.friend_list(username)
 
 
-@route('/chat/<friend_id>')
+@app.route('/chat/<friend_id>')
 def get_chat_with_friend(friend_id):
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
 
@@ -184,7 +220,7 @@ def get_chat_with_friend(friend_id):
 
 
 # Help with debugging
-@post('/debug/<cmd:path>')
+@app.post('/debug/<cmd:path>')
 def post_debug(cmd):
     return model.debug(cmd)
 
@@ -193,6 +229,6 @@ def post_debug(cmd):
 
 
 # 404 errors, use the same trick for other types of errors
-@error(404)
+@app.error(404)
 def error(error):
     return model.handle_errors(error)

@@ -105,7 +105,8 @@ def register_new_user(username, password, pk="tmp"):
     if register:
         salt = os.urandom(16)  # 16 bytes of random salt
         hashed = sec.hash_the_pass(password, salt)
-        db.add_user(username=username, password=hashed, salt=salt, public_key=pk, admin=0)
+        db.add_user(username=username, password=hashed, salt=salt,
+                    public_key=pk, admin=0)
         return page_view("valid", name=username)
     else:
         return page_view("invalid", reason=err_str)
@@ -127,10 +128,31 @@ def check_password_security(password, username):
 
 def friend_list(username):
     if username:
-        friends = db.get_one_way_friends(username)
-        return page_view("populate/populateFriends", ext=".tpl", username=username, friend_usernames=friends)
+        friend_ids, friends = db.get_one_way_friends(username)
+        return page_view("friends/populateFriends", ext=".tpl", username=username,
+                         friend_usernames=friends, friend_ids=friend_ids, err_msg="")
     else:
         return page_view("invalid", reason="Login before chatting with others!")
+
+
+def friend_chat(username, friend_id):
+    err_msg = "Error finding user at this link. Talk to someone else?"
+    # check that username is indeed logged in
+    if not username:
+        return page_view("invalid", reason="Login before chatting with others!")
+
+    # Check that the friend_id exists
+    this_username, friend_username = db.get_users_from_friend_id(friend_id)
+
+    if this_username != username:
+        return page_view("friends/populateFriends", ext=".tpl", username=username,
+                         friend_usernames=[], friend_ids=[],
+                         err_msg=err_msg)
+
+    friend_ids, friends = db.get_one_way_friends(username)
+    return page_view("friends/chat", ext=".tpl", err_msg="",
+                     friend_username=friend_username, username=username,
+                     friend_usernames=friends, friend_ids=friend_ids)
 
 
 def server_key_gen():

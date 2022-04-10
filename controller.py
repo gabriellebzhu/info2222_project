@@ -28,22 +28,22 @@ def serve_pictures(picture):
     '''
     return static_file(picture, root='static/img/')
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 # Allow CSS
-@route('/css/<css:path>')
+@route('/css/<css:path>', name='static')
 def serve_css(css):
     '''
         serve_css
 
-        Serves css from static/css/
+        Serves css from static/css
 
         :: css :: A path to the requested css
 
         Returns a static file object containing the requested css
     '''
-    return static_file(css, root='static/css/')
+    return static_file(css, root='static/css')
 
 #-----------------------------------------------------------------------------
 
@@ -167,11 +167,17 @@ def get_about():
 
 
 @route('/friends')
-def restricted_area():
+def get_friends():
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
 
     return model.friend_list(username)
 
+
+@route('/chat/<friend_id>')
+def get_chat_with_friend(friend_id):
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    return model.friend_chat(username, friend_id)
 
 
 # -----------------------------------------------------------------------------

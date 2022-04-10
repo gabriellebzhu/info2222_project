@@ -15,6 +15,7 @@ import sec_helper as sec
 # 3. alice want start communicating with bob, needs to create a session key with bob if there is not one. session key used to symmetrically encrypt the actual message. for this session key, it needs to be encrypted with bob's public key. NEED TO ATTACH SIGNATURE USING ALICES PRIVATE KEY
 # 4. bob decrypt the session key with bob private key. bob will decrypt the actual message with the session key. Check that the signature is ok with alice's public key.
 
+
 class SQLDatabase():
     '''
         Our SQL Database
@@ -39,7 +40,7 @@ class SQLDatabase():
     def commit(self):
         self.conn.commit()
 
-    #-----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
 
     # Sets up the database
     # Default admin password
@@ -66,7 +67,7 @@ class SQLDatabase():
         if self.cur.fetchone()[0] == 0:
             # Create the users table
             self.execute("""CREATE TABLE Friends(
-                friend_id INTEGER PRIMARY KEY,
+                friend_id INTEGER,
                 user_id1 INTEGER,
                 user_id2 INTEGER
             )""")
@@ -184,7 +185,16 @@ class SQLDatabase():
             return False
         user_id2 = self.cur.fetchone()[0]
 
-        insert_friends = f"INSERT INTO Friends VALUES(NULL, '{user_id1}', '{user_id2}');"
+        # allocate random friend id for friend pair
+        while True:
+            friend_id = sec.salt_to_string(os.urandom(16))
+            check_id_uniq_sql = f"SELECT 1 from Friends where friend_id = '{friend_id}'"
+            self.execute(check_id_uniq_sql)
+
+            if not self.cur.fetchone():
+                break
+
+        insert_friends = f"INSERT INTO Friends VALUES('{friend_id}', '{user_id1}', '{user_id2}');"
 
         self.execute(insert_friends)
         self.commit()
@@ -197,7 +207,7 @@ class SQLDatabase():
 
             :return: list of friends' usernames as strings
         """
-        friend_ids_cmd = """SELECT F.Username AS FriendUsername
+        friend_ids_cmd = """SELECT UtoF.friend_id AS FriendID, F.Username AS FriendUsername
                             FROM Users AS U
                             JOIN Friends AS UtoF ON UtoF.user_id1 = U.ID
                             JOIN Users AS F ON F.id = UtoF.user_id2
@@ -206,11 +216,27 @@ class SQLDatabase():
         friend_ids_cmd = friend_ids_cmd.format(username=username)
 
         self.execute(friend_ids_cmd)
-        friends = [friend[0] for friend in self.cur.fetchall()]
-        if not friends:
+        friend_ls = self.cur.fetchall()
+        if not friend_ls:
             return None
+        friend_id = [friend[0] for friend in friend_ls]
+        friends = [friend[1] for friend in friend_ls]
 
-        return friends
+        return friend_id, friends
+
+    def get_users_from_friend_id(self, friend_id):
+        friend_usrname_sql = """SELECT U.username AS Username, F.username AS FriendUsername
+                    FROM Users AS U
+                    JOIN Friends AS UtoF ON UtoF.user_id1 = U.id
+                    JOIN Users AS F ON F.id = UtoF.user_id2
+                    where UtoF.friend_id = '{friend_id}' """
+        friend_usrname_sql = friend_usrname_sql.format(friend_id=friend_id)
+        
+        self.execute(friend_usrname_sql)
+        result = self.cur.fetchone()
+        if not result:
+            return False
+        return result
 
     def get_mutual_friends(self, username):
         """
@@ -231,6 +257,13 @@ class SQLDatabase():
             return None
 
         return self.cur.fetchall()
+
+    # -----------------------------------------------------------------------------
+    # Chat Backlog
+    # -----------------------------------------------------------------------------
+
+    def add_message():
+        pass
 
     def peek(self):
         sql_query = """

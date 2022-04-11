@@ -47,6 +47,11 @@
     color: #A9a9;
 }
 
-#messages { list-style-type: none; margin: 0; padding: 0; }
-#messages > li { padding: 0.5rem 1rem; }
+#message-list {
+    background: #effeff;
+}
+#message-list > li {
+    padding: 0.5rem 1rem; 
+    float: none;
+}
 

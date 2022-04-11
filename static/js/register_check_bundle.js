@@ -28466,7 +28466,7 @@ pki.verifyCertificateChain = function(caStore, chain, options) {
 },{"./aes":4,"./asn1":7,"./des":11,"./forge":13,"./md":20,"./mgf":22,"./oids":24,"./pem":27,"./pss":35,"./rsa":38,"./util":44}],46:[function(require,module,exports){
 var forge = require('node-forge');
 
-var form = document.getElementById('login-form');
+var form = document.getElementById('register-form');
 form.addEventListener("submit", function (event) {
     event.preventDefault();
 
@@ -28474,24 +28474,22 @@ form.addEventListener("submit", function (event) {
     var user = document.getElementById("username").value;
 
     if (pass == '') {
-        document.getElementById('login-validity').innerHTML = 'Please enter a password';
+        document.getElementById('register-validity').innerHTML = 'Please enter a password';
         console.log("AAAHH");
         return;
     } else if (user == '') {
-        document.getElementById('login-validity').innerHTML = 'Please enter a username';
+        document.getElementById('register-validity').innerHTML = 'Please enter a username';
         console.log("AAAHH");
         return;
     }
 
-    // let user_pk = gen_keys();
-    // console.log("pk: " + user_pk)
-    // console.log("cookies: " + document.cookie)
+    let user_pk = gen_keys();
 
     $.ajax({
         type: "POST",
-        url: "/login",
+        url: "/register",
         contentType: "application/json",
-        data: JSON.stringify({user_pk: 'user_pk', username: user, password: pass}),
+        data: JSON.stringify({user_pk: user_pk, username: user, password: pass}),
         dataType: "json",
         success: parse_response
     });
@@ -28500,18 +28498,18 @@ form.addEventListener("submit", function (event) {
 var parse_response = function(response) {
   console.log(response.message);
   if (response.success === '1') {
-      window.location.href = "/friends";
+      window.location.href = "/login";
   } else {
-      document.getElementById('login-validity').innerHTML = 'Username and password combination are incorrect';
+      document.getElementById('register-validity').innerHTML = 'Username taken!';
   }
-
 }
 
 function gen_keys() {
   let keys = forge.pki.rsa.generateKeyPair(2048);
-  window.localStorage.setItem('private_pem', private_pem);
-  // document.cookie = "private_key=" + "test" + "; SameSite=strict";
-  return forge.pki.publicKeyToPem(keys.publicKey);
+  let public_pem = forge.pki.publicKeyToPem(keys.publicKey);
+  window.localStorage.setItem('public_pem', public_pem);
+  window.localStorage.setItem('private_pem', forge.pki.privateKeyToPem(keys.privateKey));
+  return public_pem;
 }
 
 // $(document).ready(function() {

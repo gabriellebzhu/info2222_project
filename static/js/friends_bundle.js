@@ -28466,81 +28466,23 @@ pki.verifyCertificateChain = function(caStore, chain, options) {
 },{"./aes":4,"./asn1":7,"./des":11,"./forge":13,"./md":20,"./mgf":22,"./oids":24,"./pem":27,"./pss":35,"./rsa":38,"./util":44}],46:[function(require,module,exports){
 var forge = require('node-forge');
 
-var form = document.getElementById('login-form');
-form.addEventListener("submit", function (event) {
-    event.preventDefault();
+var key = forge.random.getBytesSync(16);
+var iv = forge.random.getBytesSync(16);
 
-    var pass = document.getElementById("password").value;
-    var user = document.getElementById("username").value;
+let friend_pem = window.friend_pk;
+let friend_pk = forge.pki.publicKeyFromPem(friend_pem);
 
-    if (pass == '') {
-        document.getElementById('login-validity').innerHTML = 'Please enter a password';
-        console.log("AAAHH");
-        return;
-    } else if (user == '') {
-        document.getElementById('login-validity').innerHTML = 'Please enter a username';
-        console.log("AAAHH");
-        return;
-    }
 
-    // let user_pk = gen_keys();
-    // console.log("pk: " + user_pk)
-    // console.log("cookies: " + document.cookie)
-
+function send_secret(key, iv, friend_pk) {
+    key_and_iv = friend_pk.encrypt(key + iv);
     $.ajax({
         type: "POST",
-        url: "/login",
+        url: window.location.href,
         contentType: "application/json",
-        data: JSON.stringify({user_pk: 'user_pk', username: user, password: pass}),
+        data: JSON.stringify({message: message}),
         dataType: "json",
-        success: parse_response
+        success: disp_msg
     });
-});
-
-var parse_response = function(response) {
-  console.log(response.message);
-  if (response.success === '1') {
-      window.location.href = "/friends";
-  } else {
-      document.getElementById('login-validity').innerHTML = 'Username and password combination are incorrect';
-  }
-
 }
 
-function gen_keys() {
-  let keys = forge.pki.rsa.generateKeyPair(2048);
-  window.localStorage.setItem('private_pem', private_pem);
-  // document.cookie = "private_key=" + "test" + "; SameSite=strict";
-  return forge.pki.publicKeyToPem(keys.publicKey);
-}
-
-// $(document).ready(function() {
-//     // if (window.isRegister === 'false') {
-//         $.ajax({
-//             type: "POST",
-//             url: "_get_user_pk_json",
-//             contentType: "application/json",
-//             data: JSON.stringify({user_pk: "TESTING!!!"}),
-//             dataType: "json"
-//         });
-//     // }
-// });
-
-
-// window.onload=function(){
-//     // if (isRegister === 'false') {
-//         // var keys = forge.pki.rsa.generateKeyPair(2048);
-
-//         // document.cookie = "private_key=" + keys.privateKey;
-//         // var user_pk = keys.publicKey;
-
-//         $.ajax({
-//             type: "POST",
-//             url: "_get_user_pk_json",
-//             contentType: "application/json",
-//             data: JSON.stringify({user_pk: "TESTING!!!"}),
-//             dataType: "json",
-//         });
-//     // }
-// };
 },{"node-forge":15}]},{},[46]);

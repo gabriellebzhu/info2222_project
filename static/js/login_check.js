@@ -24,7 +24,7 @@ form.addEventListener("submit", function (event) {
         type: "POST",
         url: "/login",
         contentType: "application/json",
-        data: JSON.stringify({user_pk: "TESTING!!!", username: user, password: pass}),
+        data: JSON.stringify({user_pk: user_pk, username: user, password: pass}),
         dataType: "json",
         success: parse_response
     });

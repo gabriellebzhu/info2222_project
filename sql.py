@@ -59,7 +59,7 @@ class SQLDatabase():
         friends_cols = """friend_id INTEGER, user_id1 INTEGER, user_id2 INTEGER"""
         self.create_table("Friends", friends_cols)
 
-        chats_cols = """friend_id INTEGER, sender_username TEXT, message TEXT"""
+        chats_cols = """msg_id INTEGER PRIMARY KEY, friend_id INTEGER, sender_username TEXT, message TEXT"""
         self.create_table("Chats", chats_cols)
 
         # Add our admin user
@@ -92,6 +92,20 @@ class SQLDatabase():
         salt = sec.salt_to_string(salt)
         sql_cmd = sql_cmd.format(username=username, password=password, salt=salt, admin=admin,
                                  pk=public_key)
+
+        self.execute(sql_cmd)
+        self.commit()
+        return True
+
+    # update pk
+    def user_pk_update(self, username, new_public_key):
+        sql_cmd = """
+                UPDATE Users
+                SET pk = '{pk}'
+                WHERE username = '{username}'
+            """
+        sql_cmd = sql_cmd.format(username=username,
+                                 pk=new_public_key)
 
         self.execute(sql_cmd)
         self.commit()
@@ -199,6 +213,14 @@ class SQLDatabase():
         self.commit()
         return True
 
+    def get_friend_pk(self, friend_username):
+        pk_cmd = f"select pk from Users where username='{friend_username}'"
+        self.execute(pk_cmd)
+        pk = self.cur.fetchone()[0]
+        print(pk.split("\n"))
+        pk = '\\r\\n'.join(pk.split("\r\n"))
+        return pk
+
     def get_one_way_friends(self, username):
         """
             Get the usernames of all of username's friends (who may or may not consider
@@ -216,8 +238,18 @@ class SQLDatabase():
 
         self.execute(friend_ids_cmd)
         friend_ls = self.cur.fetchall()
+        
+        friend_ids_cmd = """SELECT UtoF.friend_id AS FriendID, F.Username AS FriendUsername
+                            FROM Users AS U
+                            JOIN Friends AS UtoF ON UtoF.user_id2 = U.ID
+                            JOIN Users AS F ON F.id = UtoF.user_id1
+                            where U.username = '{username}' """.format(username=username)
+
+        self.execute(friend_ids_cmd)
+        friend_ls += self.cur.fetchall()
+        print(friend_ls)
         if not friend_ls:
-            return None
+            return ([], [])
         friend_id = [friend[0] for friend in friend_ls]
         friends = [friend[1] for friend in friend_ls]
 
@@ -237,32 +269,47 @@ class SQLDatabase():
             return False
         return result
 
-    def get_mutual_friends(self, username):
-        """
-            Get the usernames of all of username's friends who do consider
-            username a friend as well. (IN PROGRESS)
-        """
-        friend_ids_cmd = """SELECT U.id UserID, U.username AS Username, F.Username AS FriendUsername
-                            FROM Users AS U
-                            JOIN Friends AS UtoF ON UtoF.user_id1 = U.id
-                            JOIN Users AS F ON F.id = UtoF.user_id2
-                            WHERE U.username = "{username}";
-                            """
+    # def get_mutual_friends(self, username):
+    #     """
+    #         Get the usernames of all of username's friends who do consider
+    #         username a friend as well. (IN PROGRESS)
+    #     """
+    #     friend_ids_cmd = """SELECT U.id UserID, U.username AS Username, F.Username AS FriendUsername
+    #                         FROM Users AS U
+    #                         JOIN Friends AS UtoF ON UtoF.user_id1 = U.id
+    #                         JOIN Users AS F ON F.id = UtoF.user_id2
+    #                         WHERE U.username = "{username}";
+    #                         """
 
-        friend_ids_cmd = friend_ids_cmd.format(username=username)
+    #     friend_ids_cmd = friend_ids_cmd.format(username=username)
 
-        self.execute(friend_ids_cmd)
-        if not self.cur.fetchall():
-            return None
+    #     self.execute(friend_ids_cmd)
+    #     if not self.cur.fetchall():
+    #         return None
 
-        return self.cur.fetchall()
+    #     return self.cur.fetchall()
 
     # -----------------------------------------------------------------------------
     # Chat Backlog
     # -----------------------------------------------------------------------------
 
-    def add_message():
-        pass
+    def add_message(self, friend_id, sender_username, message):
+        insert_message = f"INSERT INTO Chats VALUES(NULL, '{friend_id}', \
+                           '{sender_username}', '{message}');"
+        self.execute(insert_message)
+        self.commit()
+
+    def get_recent_msgs(self, friend_id):
+        retrieve = """SELECT sender_username, message FROM (
+                        SELECT * FROM Chats
+                        WHERE friend_id = {friend_id}
+                        ORDER BY msg_id DESC LIMIT 10
+                      ) sub
+                      ORDER BY msg_id ASC""".format(friend_id=friend_id)
+        self.execute(retrieve)
+
+        result = self.cur.fetchall()
+        return result
 
     def peek(self):
         sql_query = """

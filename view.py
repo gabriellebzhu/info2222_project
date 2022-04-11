@@ -58,7 +58,7 @@ class View():
 
     def load_template(self, filename):
         '''
-            simple_render 
+            simple_render
             A simple render using the format method
             
             :: template :: The template to use

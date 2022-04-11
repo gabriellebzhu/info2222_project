@@ -28466,81 +28466,99 @@ pki.verifyCertificateChain = function(caStore, chain, options) {
 },{"./aes":4,"./asn1":7,"./des":11,"./forge":13,"./md":20,"./mgf":22,"./oids":24,"./pem":27,"./pss":35,"./rsa":38,"./util":44}],46:[function(require,module,exports){
 var forge = require('node-forge');
 
-var form = document.getElementById('login-form');
-form.addEventListener("submit", function (event) {
-    event.preventDefault();
+var key = forge.random.getBytesSync(16);
+var iv = forge.random.getBytesSync(16);
 
-    var pass = document.getElementById("password").value;
-    var user = document.getElementById("username").value;
+let friend_pem = window.friend_pk;
+let friend_pk = forge.pki.publicKeyFromPem(friend_pem);
 
-    if (pass == '') {
-        document.getElementById('login-validity').innerHTML = 'Please enter a password';
-        console.log("AAAHH");
-        return;
-    } else if (user == '') {
-        document.getElementById('login-validity').innerHTML = 'Please enter a username';
-        console.log("AAAHH");
-        return;
+
+function get_secret(friend_pk) {
+    let key_and_iv = "none";
+    if (window.old_chat_len === "0") {
+        key_and_iv = friend_pk.encrypt(key + iv);
     }
+    return key_and_iv
+}
 
-    // let user_pk = gen_keys();
-    // console.log("pk: " + user_pk)
-    // console.log("cookies: " + document.cookie)
+// function getCookie(cookie_name) {
+//     // from W3Schools
+//     let name = cookie_name + "=";
+//     let decodedCookie = decodeURIComponent(document.cookie);
+//     let ca = decodedCookie.split(';');
+//     for(let i = 0; i <ca.length; i++) {
+//         let c = ca[i];
+//         while (c.charAt(0) == ' ') {
+//             c = c.substring(1);
+//         }
+//         if (c.indexOf(name) == 0) {
+//             return c.substring(name.length, c.length);
+//         }
+//     }
+//     return "";
+// }
 
+function sym_encrypt(message) {
+    var cipher = forge.cipher.createCipher('AES-CBC', key);
+    cipher.start({iv: iv});
+    cipher.update(forge.util.createBuffer(message));
+    cipher.finish();
+    console.log(cipher.output)
+    return cipher.output.toHex();
+}
+
+
+function send_msg(message) {
+    // encrypt message with pub key of friend
+    console.log("msg: " + message);
+    enc_message = sym_encrypt(message);
+    console.log("encrypted msg: " + enc_message);
+
+    enc_secret = get_secret(key, iv, friend_pk);
     $.ajax({
         type: "POST",
-        url: "/login",
+        url: window.location.href,
         contentType: "application/json",
-        data: JSON.stringify({user_pk: 'user_pk', username: user, password: pass}),
+        data: JSON.stringify({secret: enc_secret, message: message}),
         dataType: "json",
-        success: parse_response
+        success: disp_msg
     });
+};
+
+var form = document.getElementById('message-form');
+form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    let msg = document.getElementById("msg-input").value;
+    console.log(msg)
+    send_msg(msg);
 });
 
-var parse_response = function(response) {
-  console.log(response.message);
-  if (response.success === '1') {
-      window.location.href = "/friends";
-  } else {
-      document.getElementById('login-validity').innerHTML = 'Username and password combination are incorrect';
-  }
+//     let username = getCookie('account');
 
-}
+var disp_msg = function(response) {
+    var ul = document.getElementById("message-list");
+    var li_elem = document.createElement("li");
 
-function gen_keys() {
-  let keys = forge.pki.rsa.generateKeyPair(2048);
-  window.localStorage.setItem('private_pem', private_pem);
-  // document.cookie = "private_key=" + "test" + "; SameSite=strict";
-  return forge.pki.publicKeyToPem(keys.publicKey);
-}
+    if (window.username === response.username) {
+        li_elem.setAttribute('class', 'curr-user-msg');
+    } else {
+        li_elem.setAttribute('class', 'friend-user-msg');
+    }
 
-// $(document).ready(function() {
-//     // if (window.isRegister === 'false') {
-//         $.ajax({
-//             type: "POST",
-//             url: "_get_user_pk_json",
-//             contentType: "application/json",
-//             data: JSON.stringify({user_pk: "TESTING!!!"}),
-//             dataType: "json"
-//         });
-//     // }
-// });
+    msg = document.getElementById("msg-input").value;
+    var bolded_user = "<b>" + response.username + ":</b> ";
 
+    li_elem.innerHTML = bolded_user + msg;
+    ul.appendChild(li_elem);
 
-// window.onload=function(){
-//     // if (isRegister === 'false') {
-//         // var keys = forge.pki.rsa.generateKeyPair(2048);
+    let len = document.getElementById('message-list').getElementsByTagName('li').length
+    while (len > 10) {
+        ul.removeChild(ul.childNodes[0]);
+        len--;
+        console.log("curr_len: " + len);
+    }
 
-//         // document.cookie = "private_key=" + keys.privateKey;
-//         // var user_pk = keys.publicKey;
+    form.reset();
+};
 
-//         $.ajax({
-//             type: "POST",
-//             url: "_get_user_pk_json",
-//             contentType: "application/json",
-//             data: JSON.stringify({user_pk: "TESTING!!!"}),
-//             dataType: "json",
-//         });
-//     // }
-// };
 },{"node-forge":15}]},{},[46]);

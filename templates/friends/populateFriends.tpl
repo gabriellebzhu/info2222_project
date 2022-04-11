@@ -14,3 +14,5 @@
       % end
     </ul>
 </p>
+
+<script>console.log("cookies: " + document.cookie);</script>

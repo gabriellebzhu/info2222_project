@@ -6,10 +6,12 @@
     Nothing here should be stateful, if it's stateful let the database handle it
 '''
 from operator import truediv
+import this
 import view
 import random
 import sql
 
+from bottle import request
 import os
 
 import sec_helper as sec
@@ -53,7 +55,7 @@ def register_form():
 
 
 # Check the login credentials
-def login_check(username, password):
+def login_check(username, password, pk):
     '''
         login_check
         Checks usernames and passwords
@@ -77,13 +79,14 @@ def login_check(username, password):
             login = False
 
     if login:
+        # db.user_pk_update(username, pk)
         return True, page_view("valid", name=username, is_register="false")
     else:
         return False, page_view("invalid", reason=message)
 
 
 # Register User
-def register_new_user(username, password, pk="tmp"):
+def register_new_user(username, password, pk):
     global db
     # By default assume good creds
     register = True
@@ -107,9 +110,9 @@ def register_new_user(username, password, pk="tmp"):
         hashed = sec.hash_the_pass(password, salt)
         db.add_user(username=username, password=hashed, salt=salt,
                     public_key=pk, admin=0)
-        return page_view("valid", name=username, is_register="true")
+        return True, page_view("valid", name=username, is_register="true")
     else:
-        return page_view("invalid", reason=err_str)
+        return False, page_view("invalid", reason=err_str)
 
 
 def check_password_security(password, username):
@@ -144,15 +147,22 @@ def friend_chat(username, friend_id):
     # Check that the friend_id exists
     this_username, friend_username = db.get_users_from_friend_id(friend_id)
 
+    if username == friend_username:
+        friend_username = this_username
+        this_username = username
+
     if this_username != username:
         return page_view("friends/populateFriends", ext=".tpl", username=username,
                          friend_usernames=[], friend_ids=[],
                          err_msg=err_msg)
 
     friend_ids, friends = db.get_one_way_friends(username)
+    old_chat = db.get_recent_msgs(friend_id)
+    friend_pk = db.get_friend_pk(friend_username)
     return page_view("friends/chat", ext=".tpl", err_msg="",
-                     friend_username=friend_username, username=username,
-                     friend_usernames=friends, friend_ids=friend_ids)
+                     friend_username=friend_username, friend_pk=friend_pk,
+                     username=username, friend_usernames=friends,
+                     friend_ids=friend_ids, old_chat=old_chat)
 
 
 def server_key_gen():
@@ -227,3 +237,7 @@ def get_server_public_key():
         key = '\\\n'.join(key)
 
     return key
+
+def save_msg(friend_id, username, message):
+    db.add_message(friend_id, username, message)
+    db.get_recent_msgs(friend_id)

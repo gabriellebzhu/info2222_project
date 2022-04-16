@@ -1,0 +1,39 @@
+
+var forge = require('node-forge');
+var rsa = forge.pki.rsa;
+
+
+// let friend_pem = window.friend_pk;
+// let friend_pk = forge.pki.publicKeyFromPem(friend_pem);
+
+var alice = rsa.generateKeyPair({bits: 2048, e: 0x10001});
+var bob = rsa.generateKeyPair({bits: 2048, e: 0x10001});
+let msg = 'sign this message!';
+
+var md = forge.md.sha1.create();
+md.update(msg, 'utf8');
+var signature = alice.privateKey.sign(md);
+
+var sigHex = forge.util.bytesToHex(signature);
+console.log("sig: " + sigHex);
+console.log("sig len: " + Buffer.byteLength(sigHex));
+
+var encrypted = bob.publicKey.encrypt(msg);
+var encHex = forge.util.bytesToHex(encrypted);
+// console.log("enc: " + en cHex);
+console.log("enc len: " + Buffer.byteLength(encHex));
+
+var bobRecv = encHex + sigHex;
+var recvEncHex = bobRecv.slice(0,512);
+var recvEncUnHex = forge.util.hexToBytes(recvEncHex);
+var recvSigHex = bobRecv.slice(512, 1024);
+var recvSigUnHex = forge.util.hexToBytes(recvSigHex);
+
+var decrypted = bob.privateKey.decrypt(recvEncUnHex);
+console.log("dec: " + decrypted);
+
+var bobMd = forge.md.sha1.create();
+bobMd.update(decrypted, 'utf8');
+
+var verified = alice.publicKey.verify(bobMd.digest().bytes(), recvSigUnHex);
+console.log("verify: " + verified);

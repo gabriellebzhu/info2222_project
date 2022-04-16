@@ -28468,7 +28468,8 @@ var forge = require('node-forge');
 
 var form = document.getElementById('register-form');
 form.addEventListener("submit", function (event) {
-    event.preventDefault();
+    toggle_load()  // display the loading icon
+    event.preventDefault();  // stop the form from being submitted
 
     var pass = document.getElementById("password").value;
     var user = document.getElementById("username").value;
@@ -28476,14 +28477,17 @@ form.addEventListener("submit", function (event) {
     if (pass == '') {
         document.getElementById('register-validity').innerHTML = 'Please enter a password';
         console.log("AAAHH");
+        toggle_load()
+
         return;
     } else if (user == '') {
         document.getElementById('register-validity').innerHTML = 'Please enter a username';
         console.log("AAAHH");
+        toggle_load()
+
         return;
     }
-
-    let user_pk = gen_keys();
+    let user_pk = gen_keys(user);
 
     $.ajax({
         type: "POST",
@@ -28500,45 +28504,26 @@ var parse_response = function(response) {
   if (response.success === '1') {
       window.location.href = "/login";
   } else {
-      document.getElementById('register-validity').innerHTML = 'Username taken!';
+        toggle_load()
+        document.getElementById('register-validity').innerHTML = 'Username taken!';
   }
 }
 
-function gen_keys() {
+function gen_keys(user) {
   let keys = forge.pki.rsa.generateKeyPair(2048);
   let public_pem = forge.pki.publicKeyToPem(keys.publicKey);
-  window.localStorage.setItem('public_pem', public_pem);
-  window.localStorage.setItem('private_pem', forge.pki.privateKeyToPem(keys.privateKey));
+  window.localStorage.setItem(user + 'public_pem', public_pem);
+  window.localStorage.setItem(user + 'private_pem', forge.pki.privateKeyToPem(keys.privateKey));
   return public_pem;
 }
 
-// $(document).ready(function() {
-//     // if (window.isRegister === 'false') {
-//         $.ajax({
-//             type: "POST",
-//             url: "_get_user_pk_json",
-//             contentType: "application/json",
-//             data: JSON.stringify({user_pk: "TESTING!!!"}),
-//             dataType: "json"
-//         });
-//     // }
-// });
-
-
-// window.onload=function(){
-//     // if (isRegister === 'false') {
-//         // var keys = forge.pki.rsa.generateKeyPair(2048);
-
-//         // document.cookie = "private_key=" + keys.privateKey;
-//         // var user_pk = keys.publicKey;
-
-//         $.ajax({
-//             type: "POST",
-//             url: "_get_user_pk_json",
-//             contentType: "application/json",
-//             data: JSON.stringify({user_pk: "TESTING!!!"}),
-//             dataType: "json",
-//         });
-//     // }
-// };
+function toggle_load() {
+    var loader = document.getElementsByClassName("loader")[0];
+    
+    if (loader.style.display === "none") {
+        loader.style.display = "block";
+    } else {
+        loader.style.display = "none";
+    }
+}
 },{"node-forge":15}]},{},[46]);

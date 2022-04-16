@@ -41,9 +41,9 @@ var parse_response = function(response) {
 }
 
 var gen_keys = function() {
-        let keys = forge.pki.rsa.generateKeyPair(2048);
-        document.cookie = "private_key=" + keys.privateKey;
-        return keys.publicKey;
+    let keys = forge.pki.rsa.generateKeyPair(2048);
+    document.cookie = "private_key=" + keys.privateKey;
+    return keys.publicKey;
 }
 
 // $(document).ready(function() {

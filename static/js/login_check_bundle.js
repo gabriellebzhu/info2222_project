@@ -28483,10 +28483,6 @@ form.addEventListener("submit", function (event) {
         return;
     }
 
-    // let user_pk = gen_keys();
-    // console.log("pk: " + user_pk)
-    // console.log("cookies: " + document.cookie)
-
     $.ajax({
         type: "POST",
         url: "/login",
@@ -28507,12 +28503,12 @@ var parse_response = function(response) {
 
 }
 
-function gen_keys() {
-  let keys = forge.pki.rsa.generateKeyPair(2048);
-  window.localStorage.setItem('private_pem', private_pem);
-  // document.cookie = "private_key=" + "test" + "; SameSite=strict";
-  return forge.pki.publicKeyToPem(keys.publicKey);
-}
+// function gen_keys() {
+//   let keys = forge.pki.rsa.generateKeyPair(2048);
+//   window.localStorage.setItem('private_pem', private_pem);
+//   // document.cookie = "private_key=" + "test" + "; SameSite=strict";
+//   return forge.pki.publicKeyToPem(keys.publicKey);
+// }
 
 // $(document).ready(function() {
 //     // if (window.isRegister === 'false') {

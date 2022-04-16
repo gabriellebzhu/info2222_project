@@ -138,7 +138,7 @@ center {
 
 .friend-user-msg {
     text-align: left;
-    color: rgb(212, 192, 208);
+    color: #d4c0d0;
 }
 
 /* #friend-list {
@@ -171,4 +171,36 @@ center {
 .prompt {
     padding-top: 2rem;
     margin-bottom: 0;
+}
+
+.loader {
+    background-color: #45554da7;
+    z-index: 100;
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+}
+
+.circle-spin {
+    border: 16px solid #5b7467;
+    border-top: 16px solid #82d5ad;
+    border-radius: 50%;
+    top: 40%;
+    width: 50px;
+    height: 50px;
+    animation: spin 2s linear infinite, colour 1.3s ease-in-out infinite;
+    position: relative;
+}
+  
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg);}
+}
+  
+@keyframes colour {
+    0% { border-top: 16px solid #82d5ad;}
+    25% { border-top: 16px solid #8757db;}
+    65% { border-top: 16px solid #dba0cf;}
 }

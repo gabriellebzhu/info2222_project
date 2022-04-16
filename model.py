@@ -5,8 +5,7 @@
     It should exist as a separate layer to any database or data structure that you might be using
     Nothing here should be stateful, if it's stateful let the database handle it
 '''
-from operator import truediv
-import this
+import json
 import view
 import random
 import sql
@@ -158,12 +157,21 @@ def friend_chat(username, friend_id):
 
     friend_ids, friends = db.get_one_way_friends(username)
     old_chat = db.get_recent_msgs(friend_id)
+    old_chat2 = json.dumps(old_chat)
+    print("friendpk")
     friend_pk = db.get_friend_pk(friend_username)
+    print(friend_pk)
+    key_and_iv = db.get_secret(friend_id)
+    print(friend_id)
     return page_view("friends/chat", ext=".tpl", err_msg="",
                      friend_username=friend_username, friend_pk=friend_pk,
-                     username=username, friend_usernames=friends,
-                     friend_ids=friend_ids, old_chat=old_chat)
+                     username=username, friend_id=friend_id,
+                     friend_usernames=friends, friend_ids=friend_ids,
+                     key_and_iv=key_and_iv, old_chat2=old_chat2)
 
+
+def save_secret(friend_id, secret):
+    db.add_secret(friend_id, secret)
 
 def server_key_gen():
     key = RSA.generate(2048)

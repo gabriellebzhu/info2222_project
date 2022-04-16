@@ -28466,39 +28466,94 @@ pki.verifyCertificateChain = function(caStore, chain, options) {
 },{"./aes":4,"./asn1":7,"./des":11,"./forge":13,"./md":20,"./mgf":22,"./oids":24,"./pem":27,"./pss":35,"./rsa":38,"./util":44}],46:[function(require,module,exports){
 var forge = require('node-forge');
 
-var key = forge.random.getBytesSync(16);
-var iv = forge.random.getBytesSync(16);
-
-let friend_pem = window.friend_pk;
-let friend_pk = forge.pki.publicKeyFromPem(friend_pem);
+let friendPem = window.friendPk;
+let friendPk = forge.pki.publicKeyFromPem(friendPem);
 
 
-function get_secret(friend_pk) {
-    let key_and_iv = "none";
-    if (window.old_chat_len === "0") {
-        key_and_iv = friend_pk.encrypt(key + iv);
+function getKeyIv() {
+    let keyAndIv = null;
+    if (window.oldChat.length === 0) {
+        var key = forge.random.getBytesSync(16);
+        var iv = forge.random.getBytesSync(16);
+        
+        var keyHex = forge.util.bytesToHex(key);
+        console.log("getting keyhex: " + keyHex)
+        var ivHex = forge.util.bytesToHex(iv);
+        keyAndIv = keyHex + ivHex;
+        window.localStorage.setItem(window.friendId, keyAndIv);
+    } else {
+        keyAndIv = window.localStorage.getItem(window.friendId);
+        console.log(keyAndIv);
+
+        if (!keyAndIv) {
+            console.log(!keyAndIv);
+
+            keyAndIv = decryptKeyIv(window.keyAndIv);
+            window.localStorage.setItem(window.friendId, keyAndIv);
+        }
     }
-    return key_and_iv
+    console.log(keyAndIv);
+    return keyAndIv;
 }
 
-// function getCookie(cookie_name) {
-//     // from W3Schools
-//     let name = cookie_name + "=";
-//     let decodedCookie = decodeURIComponent(document.cookie);
-//     let ca = decodedCookie.split(';');
-//     for(let i = 0; i <ca.length; i++) {
-//         let c = ca[i];
-//         while (c.charAt(0) == ' ') {
-//             c = c.substring(1);
-//         }
-//         if (c.indexOf(name) == 0) {
-//             return c.substring(name.length, c.length);
-//         }
-//     }
-//     return "";
-// }
+function signEncryptKeyIv(keyAndIv) {
+    var privatePem = window.localStorage.getItem(window.username + 'private_pem');
+    var myPrivateKey = forge.pki.privateKeyFromPem(privatePem);
 
-function sym_encrypt(message) {
+    // create signature
+    var md = forge.md.sha1.create();
+    md.update(keyAndIv, 'utf8');
+    var signature = myPrivateKey.sign(md);
+    var sigHex = forge.util.bytesToHex(signature);
+
+    // encrypt message
+    var encKeyIv = friendPk.encrypt(keyAndIv);
+    var encKeyIvHex = forge.util.bytesToHex(encKeyIv);
+
+    return encKeyIvHex + sigHex;
+}
+
+function decryptKeyIv(signEncSecret) {
+    var encSecHex = signEncSecret.slice(0,512);
+    var sigSecHex = signEncSecret.slice(512, 1024);
+    console.log(encSecHex)
+    var encSecUnhex = forge.util.hexToBytes(encSecHex);
+    var sigSecUnhex = forge.util.hexToBytes(sigSecHex);
+    console.log(encSecUnhex)
+
+    var privatePem = window.localStorage.getItem(window.username + 'private_pem');
+    var myPrivateKey = forge.pki.privateKeyFromPem(privatePem);
+
+
+    var decryptedKeyAndIv = myPrivateKey.decrypt(encSecUnhex);
+
+    var myMD = forge.md.sha1.create();
+    myMD.update(decryptedKeyAndIv, 'utf8');
+    var verified = friendPk.verify(myMD.digest().bytes(), sigSecUnhex);
+    if (verified) {
+        return decryptedKeyAndIv;
+    } else {
+        console.log("Error: Unidentified Sender");
+        return "Error: Unidentified Sender";
+    }
+}
+
+function getKeyFromKeyIv(keyAndIv) {
+    var key = keyAndIv.slice(0,32);
+    console.log("keyhex: " + key);
+    return forge.util.hexToBytes(key);
+}
+
+function getIvFromKeyIv(keyAndIv) {
+    var iv = keyAndIv.slice(32,64);
+    return forge.util.hexToBytes(iv);
+}
+
+function symEncrypt(message, keyAndIv) {
+    var key = getKeyFromKeyIv(keyAndIv);
+    console.log(key);
+    var iv = getIvFromKeyIv(keyAndIv);
+
     var cipher = forge.cipher.createCipher('AES-CBC', key);
     cipher.start({iv: iv});
     cipher.update(forge.util.createBuffer(message));
@@ -28507,21 +28562,39 @@ function sym_encrypt(message) {
     return cipher.output.toHex();
 }
 
+function symDecrypt(message) {
+    var keyAndIv = getKeyIv();
+    console.log(keyAndIv)
+    var key = getKeyFromKeyIv(keyAndIv);
+    var iv = getIvFromKeyIv(keyAndIv);
 
-function send_msg(message) {
+    var messageBytes = forge.util.hexToBytes(message);
+
+    var decipher = forge.cipher.createDecipher('AES-CBC', key);
+    decipher.start({iv: iv});
+    decipher.update(forge.util.createBuffer(messageBytes));
+    var check = decipher.finish();
+    return decipher.output.getBytes()
+
+}
+
+function sendMsg(message) {
     // encrypt message with pub key of friend
     console.log("msg: " + message);
-    enc_message = sym_encrypt(message);
-    console.log("encrypted msg: " + enc_message);
 
-    enc_secret = get_secret(key, iv, friend_pk);
+    var keyAndIv = getKeyIv();
+
+    var encSecret = signEncryptKeyIv(keyAndIv);
+    var encMessage = symEncrypt(message, keyAndIv);
+    console.log("encrypted msg: " + encMessage);
+
     $.ajax({
         type: "POST",
         url: window.location.href,
         contentType: "application/json",
-        data: JSON.stringify({secret: enc_secret, message: message}),
+        data: JSON.stringify({secret: encSecret, message: encMessage}),
         dataType: "json",
-        success: disp_msg
+        success: dispMsg
     });
 };
 
@@ -28530,35 +28603,62 @@ form.addEventListener("submit", function (event) {
     event.preventDefault();
     let msg = document.getElementById("msg-input").value;
     console.log(msg)
-    send_msg(msg);
+    sendMsg(msg);
 });
 
 //     let username = getCookie('account');
 
-var disp_msg = function(response) {
+var dispMsg = function(response) {
     var ul = document.getElementById("message-list");
-    var li_elem = document.createElement("li");
+    var liElem = document.createElement("li");
 
     if (window.username === response.username) {
-        li_elem.setAttribute('class', 'curr-user-msg');
+        liElem.setAttribute('class', 'curr-user-msg');
     } else {
-        li_elem.setAttribute('class', 'friend-user-msg');
+        liElem.setAttribute('class', 'friend-user-msg');
     }
 
     msg = document.getElementById("msg-input").value;
-    var bolded_user = "<b>" + response.username + ":</b> ";
+    var boldedUser = "<b>" + response.username + ":</b> ";
 
-    li_elem.innerHTML = bolded_user + msg;
-    ul.appendChild(li_elem);
+    liElem.innerHTML = boldedUser + msg;
+    ul.appendChild(liElem);
 
     let len = document.getElementById('message-list').getElementsByTagName('li').length
     while (len > 10) {
         ul.removeChild(ul.childNodes[0]);
         len--;
-        console.log("curr_len: " + len);
+        console.log("currLen: " + len);
     }
 
     form.reset();
 };
+
+function disp_old_msgs() {
+    let msgs = window.oldChat
+    var ul = document.getElementById("message-list");
+    
+    for (var i = 0; i < msgs.length; i++) {
+        var liElem = document.createElement("li");
+        var user = msgs[i][0];
+        var msg = msgs[i][1];
+        msg = symDecrypt(msg);
+    
+        if (window.username === user) {
+            liElem.setAttribute('class', 'curr-user-msg');
+        } else {
+            liElem.setAttribute('class', 'friend-user-msg');
+        }
+
+        var boldedUser = "<b>" + user + ":</b> ";
+        liElem.innerHTML = boldedUser + msg;
+        ul.appendChild(liElem);
+        console.log(user, msg);
+    }
+
+};
+
+
+window.onload = disp_old_msgs();
 
 },{"node-forge":15}]},{},[46]);

@@ -17,13 +17,6 @@
 
   <div class="chat-column">
     <ul id=message-list>
-      % for i in range(0, len(old_chat)):
-          % if old_chat[i][0] == username:
-          <li class="curr-user-msg"><b>{{old_chat[i][0]}}:</b> {{old_chat[i][1]}}</li>
-          % else:
-          <li class="friend-user-msg"><b>{{old_chat[i][0]}}:</b> {{old_chat[i][1]}}</li>
-          % end
-      % end
     </ul>
 
     <form id="message-form">
@@ -35,8 +28,10 @@
 
 <script type="text/javascript">
   window.username = "{{!username}}";
-  window.friend_pk = "{{!friend_pk}}";
-  window.old_chat_len = "{{!len(old_chat)}}";
+  window.friendPk = "{{!friend_pk}}";
+  window.oldChat = {{!old_chat2}};
+  window.keyAndIv = "{{!key_and_iv}}";
+  window.friendUsername = "{{!friend_id}}";
 </script>
 
 <script src="js/chat_bundle.js"></script>

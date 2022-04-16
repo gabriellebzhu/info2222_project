@@ -1,3 +1,4 @@
+import secrets
 import sqlite3
 import os
 
@@ -56,16 +57,19 @@ class SQLDatabase():
                        salt TEXT, pk TEXT, admin INTEGER DEFAULT 0"""
         self.create_table("Users", user_cols)
 
-        friends_cols = """friend_id INTEGER, user_id1 INTEGER, user_id2 INTEGER"""
+        friends_cols = """friend_id TEXT, user_id1 INTEGER, user_id2 INTEGER"""
         self.create_table("Friends", friends_cols)
 
-        chats_cols = """msg_id INTEGER PRIMARY KEY, friend_id INTEGER, sender_username TEXT, message TEXT"""
+        chats_cols = """msg_id INTEGER PRIMARY KEY, friend_id TEXT, sender_username TEXT, message TEXT"""
         self.create_table("Chats", chats_cols)
 
+        secrets_cols = """friend_id TEXT, key_and_iv TEXT"""
+        self.create_table("Secrets", secrets_cols)
+
         # Add our admin user
-        salt = os.urandom(16)
-        hashed = sec.hash_the_pass(admin_password, salt)
-        self.add_user('admin', hashed, salt=salt, public_key="test_key", admin=1)
+        # salt = os.urandom(16)
+        # hashed = sec.hash_the_pass(admin_password, salt)
+        # self.add_use r('admin', hashed, salt=salt, public_key="test_key", admin=1)
 
     def create_table(self, name, columns):
         self.cur.execute("""SELECT count(name)
@@ -217,7 +221,6 @@ class SQLDatabase():
         pk_cmd = f"select pk from Users where username='{friend_username}'"
         self.execute(pk_cmd)
         pk = self.cur.fetchone()[0]
-        print(pk.split("\n"))
         pk = '\\r\\n'.join(pk.split("\r\n"))
         return pk
 
@@ -302,7 +305,7 @@ class SQLDatabase():
     def get_recent_msgs(self, friend_id):
         retrieve = """SELECT sender_username, message FROM (
                         SELECT * FROM Chats
-                        WHERE friend_id = {friend_id}
+                        WHERE friend_id = '{friend_id}'
                         ORDER BY msg_id DESC LIMIT 10
                       ) sub
                       ORDER BY msg_id ASC""".format(friend_id=friend_id)
@@ -310,6 +313,23 @@ class SQLDatabase():
 
         result = self.cur.fetchall()
         return result
+
+    def add_secret(self, friend_id, key_and_iv):
+        insert_key = f"INSERT INTO Secrets VALUES('{friend_id}', '{key_and_iv}');"
+        self.execute(insert_key)
+        self.commit()
+
+    def get_secret(self, friend_id):
+        retrieve = """SELECT key_and_iv
+                      FROM Secrets
+                      WHERE friend_id='{friend_id}'""".format(friend_id=friend_id)
+        self.execute(retrieve)
+
+        result = self.cur.fetchone()
+        if not result:
+            return "None"
+        else:
+            return result[0]
 
     def peek(self):
         sql_query = """

@@ -223,7 +223,7 @@ def get_chat_with_friend(friend_id):
 def send_msg(friend_id):
     message = request.json.get('message')
     secret = request.json.get('secret')
-    print(secret)
+    model.save_secret(friend_id, secret)
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
     model.save_msg(friend_id, username, message)
     return {'message': message, 'username': username}

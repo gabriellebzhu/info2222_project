@@ -1,36 +1,29 @@
-
+<div class="login-section">
+<p class="prompt">
 Login with a username and password
 </p>
 
-<p>
-    from html: {{data}}
-</p>
-
-<p id="testing">
-</p>
-
-<p id="testing2">
-</p>
-
+<p id="login-validity"></p>
 
 <p>
-    <form action="/login" method="post">
-        Username: <input name="username" type="text" />
+    <form id=login-form action="/login" method="post">
+        Username: <input id="username" name="username" type="text" />
     </br>
-        Password: <input name="password" type="password" />
+        Password: <input id="password" name="password" type="password" />
     </br>
-        <input value="Login" type="submit" />
+        <input id="login-button" value="Login" type="submit"/>
     </form>
 </p>
+</div>
 
-<script type="text/javascript"> window.data = "{{!data}}" </script>
-<script src="js/bundle.js">
-</script>
+<!-- <script type="text/javascript"> window.data = "{{!data}}" </script> -->
+<!-- <script src="js/bundle.js"></script> -->
 
 <!-- <script>
     document.getElementById("testing").innerHTML = "SCRIPT IN HTML:" + "{{data}}";
 </script> -->
+<!-- <script src="js/key_gen.js"></script> -->
 
-
+<script src="js/login_check_bundle.js"></script>
 </center>
 

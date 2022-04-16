@@ -5,12 +5,15 @@
     It should exist as a separate layer to any database or data structure that you might be using
     Nothing here should be stateful, if it's stateful let the database handle it
 '''
+import json
 import view
 import random
 import sql
 
+from bottle import request
 import os
-import hashlib
+
+import sec_helper as sec
 
 from Crypto.PublicKey import RSA
 
@@ -51,7 +54,7 @@ def register_form():
 
 
 # Check the login credentials
-def login_check(username, password):
+def login_check(username, password, pk):
     '''
         login_check
         Checks usernames and passwords
@@ -61,20 +64,28 @@ def login_check(username, password):
 
         Returns either a view for valid credentials, or a view for invalid credentials
     '''
+    message = "The username or password you entered was incorrect"
 
     # By default assume good creds
     login = True
 
-    print(db.get_hashpass_from_username(username))
-
-    if login: 
-        return page_view("valid", name=username)
+    if not db.check_user_exists(username=username):
+        login = False
     else:
-        return page_view("invalid", reason="bad login")
+        salt = db.get_salt_from_username(username)
+        hashed = sec.hash_the_pass(password, salt)
+        if not db.check_credentials(username, hashed):
+            login = False
+
+    if login:
+        # db.user_pk_update(username, pk)
+        return True, page_view("valid", name=username, is_register="false")
+    else:
+        return False, page_view("invalid", reason=message)
 
 
 # Register User
-def register_new_user(username, password, pk="tmp"):
+def register_new_user(username, password, pk):
     global db
     # By default assume good creds
     register = True
@@ -86,7 +97,7 @@ def register_new_user(username, password, pk="tmp"):
     if user_exists:
         register = False
         err_str = "Account already exists"
-    elif username.isempty():
+    elif not username:
         register = False
         err_str = "No username provided"
     elif not check_password_security(password, username):
@@ -95,15 +106,12 @@ def register_new_user(username, password, pk="tmp"):
 
     if register:
         salt = os.urandom(16)  # 16 bytes of random salt
-        salted_pass = password.encode() + salt
-
-        h = hashlib.new('sha256')
-        h.update(salted_pass)
-
-        db.add_user(username=username, password=h.hexdigest(), salt=salt, public_key=pk, admin=0)
-        return page_view("valid", name=username)
+        hashed = sec.hash_the_pass(password, salt)
+        db.add_user(username=username, password=hashed, salt=salt,
+                    public_key=pk, admin=0)
+        return True, page_view("valid", name=username, is_register="true")
     else:
-        return page_view("invalid", reason=err_str)
+        return False, page_view("invalid", reason=err_str)
 
 
 def check_password_security(password, username):
@@ -114,6 +122,56 @@ def check_password_security(password, username):
     
     return True
 
+
+# -----------------------------------------------------------------------------
+# FRIENDS
+# -----------------------------------------------------------------------------
+
+
+def friend_list(username):
+    if username:
+        friend_ids, friends = db.get_one_way_friends(username)
+        return page_view("friends/populateFriends", ext=".tpl", username=username,
+                         friend_usernames=friends, friend_ids=friend_ids, err_msg="")
+    else:
+        return page_view("invalid", reason="Login before chatting with others!")
+
+
+def friend_chat(username, friend_id):
+    err_msg = "Error finding user at this link. Talk to someone else?"
+    # check that username is indeed logged in
+    if not username:
+        return page_view("invalid", reason="Login before chatting with others!")
+
+    # Check that the friend_id exists
+    this_username, friend_username = db.get_users_from_friend_id(friend_id)
+
+    if username == friend_username:
+        friend_username = this_username
+        this_username = username
+
+    if this_username != username:
+        return page_view("friends/populateFriends", ext=".tpl", username=username,
+                         friend_usernames=[], friend_ids=[],
+                         err_msg=err_msg)
+
+    friend_ids, friends = db.get_one_way_friends(username)
+    old_chat = db.get_recent_msgs(friend_id)
+    old_chat2 = json.dumps(old_chat)
+    print("friendpk")
+    friend_pk = db.get_friend_pk(friend_username)
+    print(friend_pk)
+    key_and_iv = db.get_secret(friend_id)
+    print(friend_id)
+    return page_view("friends/chat", ext=".tpl", err_msg="",
+                     friend_username=friend_username, friend_pk=friend_pk,
+                     username=username, friend_id=friend_id,
+                     friend_usernames=friends, friend_ids=friend_ids,
+                     key_and_iv=key_and_iv, old_chat2=old_chat2)
+
+
+def save_secret(friend_id, secret):
+    db.add_secret(friend_id, secret)
 
 def server_key_gen():
     key = RSA.generate(2048)
@@ -127,9 +185,11 @@ def server_key_gen():
     file_out.write(public_key)
     file_out.close()
 
-#-----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 # About
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 def about():
     '''
@@ -181,5 +241,11 @@ def get_server_public_key():
     key = "none"
     with open('key/server_public.pem', 'r') as f:
         key = f.read()
+        key = key.split('\n')
+        key = '\\\n'.join(key)
 
     return key
+
+def save_msg(friend_id, username, message):
+    db.add_message(friend_id, username, message)
+    db.get_recent_msgs(friend_id)

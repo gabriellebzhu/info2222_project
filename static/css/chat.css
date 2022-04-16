@@ -1,0 +1,57 @@
+
+.chatbox {
+    display: flex;
+}
+
+.chat-column {
+    float: right;
+    width: 70%;
+    background: #CFCFCF;
+}
+
+.user-column {
+    float: left;
+    width: 30%;
+    background-color: #aadd;
+}
+
+#message-form {
+    background: #186;
+    padding: 0.25rem;
+    display: flex;
+    height: 2.5rem;
+    position: relative;
+    top: 100%;
+    transform: translate(0, -100%);
+}
+
+#msg-input {
+    border: none;
+    padding: 0 1rem;
+    flex-grow: 1;
+    border-radius: 2rem;
+    margin: 0.25rem;
+}
+
+#meg-input:focus {
+    outline: none;
+}
+
+#message-form > button {
+    background: #333;
+    border: none;
+    padding: 0 1rem;
+    margin: 0.25rem;
+    border-radius: 3px;
+    outline: none;
+    color: #A9a9;
+}
+
+#message-list {
+    background: #effeff;
+}
+#message-list > li {
+    padding: 0.5rem 1rem; 
+    float: none;
+}
+

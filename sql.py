@@ -1,3 +1,4 @@
+from random import random
 import secrets
 import sqlite3
 import os
@@ -8,13 +9,6 @@ import sec_helper as sec
 # Practicing a good separation of concerns, we should only ever call
 # These functions from our models
 
-# If you notice anything out of place here, consider it to your advantage and don't spoil the surprise
-
-# END TO END ENCRYPTION
-# 1. alice and bob register themselves in the system
-# 2. after registration, they generate their public key pair in their browser (frontend), and send their public key to the server (stored in the user table)
-# 3. alice want start communicating with bob, needs to create a session key with bob if there is not one. session key used to symmetrically encrypt the actual message. for this session key, it needs to be encrypted with bob's public key. NEED TO ATTACH SIGNATURE USING ALICES PRIVATE KEY
-# 4. bob decrypt the session key with bob private key. bob will decrypt the actual message with the session key. Check that the signature is ok with alice's public key.
 
 
 class SQLDatabase():
@@ -66,8 +60,11 @@ class SQLDatabase():
         secrets_cols = """friend_id TEXT, key_and_iv TEXT"""
         self.create_table("Secrets", secrets_cols)
 
-        classes_cols = """class_id INTEGER PRIMARY KEY, class_name TEXT, class_code TEXT, admin_user_id TEXT"""
+        classes_cols = """class_id INTEGER PRIMARY KEY, class_name TEXT, class_code TEXT, admin_user_id INTEGER"""
         self.create_table("Classes", classes_cols)
+
+        enrolled_cols = """class_code TEXT, student_username TEXT, visible INTEGER"""
+        self.create_table("Enrollments", enrolled_cols)
 
         # Add our admin user
         # salt = os.urandom(16)
@@ -188,6 +185,41 @@ class SQLDatabase():
             return False
 
     # -----------------------------------------------------------------------------
+    # Classes 
+    # -----------------------------------------------------------------------------
+
+    def get_classes(self, username):
+        sql_query = """
+                SELECT class_code
+                FROM Enrollments
+                WHERE student_username = '{username}'
+            """
+
+        sql_query = sql_query.format(username=username)
+
+        self.execute(sql_query)
+
+        classes = [class_code[0] for class_code in self.cur.fetchall()]
+        return classes
+
+    def get_random_user(self, class_code):
+        sql_query = """
+                SELECT student_username
+                FROM Enrollments
+                WHERE class_code = '{class_code}'
+                AND visible=1
+            """
+
+        sql_query = sql_query.format(class_code=class_code)
+
+        self.execute(sql_query)
+
+        students = [student[0] for student in self.cur.fetchall()]
+        student_index = random.randint(0, len(students) - 1)
+
+        return students[student_index]
+
+    # -----------------------------------------------------------------------------
     # Friend Handling
     # -----------------------------------------------------------------------------
 
@@ -196,14 +228,16 @@ class SQLDatabase():
         user_id_2_cmd = f"SELECT id FROM Users WHERE username = '{friend_username}'"
 
         self.execute(user_id_1_cmd)
-        if not self.cur.fetchone():
+        result = self.cur.fetchone()
+        if not result:
             return False
-        user_id1 = self.cur.fetchone()[0]
+        user_id1 = result[0]
 
         self.execute(user_id_2_cmd)
-        if not self.cur.fetchone():
+        result = self.cur.fetchone()
+        if not result:
             return False
-        user_id2 = self.cur.fetchone()[0]
+        user_id2 = result[0]
 
         # allocate random friend id for friend pair
         while True:
@@ -253,7 +287,7 @@ class SQLDatabase():
 
         self.execute(friend_ids_cmd)
         friend_ls += self.cur.fetchall()
-        print(friend_ls)
+        print("1-way:", friend_ls)
         if not friend_ls:
             return ([], [])
         friend_id = [friend[0] for friend in friend_ls]

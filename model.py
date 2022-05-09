@@ -128,25 +128,38 @@ def check_password_security(password, username):
 
 def add_friend(username, friend_username):
     if username and friend_username:
+        friend_ids, friends = db.get_one_way_friends(username)
         if db.add_friend(username, friend_username):
-            return page_view("redirect", ext=".tpl", redirect_to="/friends",
-                             add_msg="Success! Friend added")
+            return page_view("friends/populateFriends", ext=".tpl", username=username,
+                             friend_usernames=friends, friend_ids=friend_ids,
+                             add_msg="Successfully added!", err_msg="")
         else:
             add_msg = "User not found."
-            return page_view("redirect", ext=".tpl", redirect_to="/friends",
-                             add_msg=add_msg)
+            return page_view("friends/populateFriends", ext=".tpl", username=username,
+                             friend_usernames=friends, friend_ids=friend_ids,
+                             add_msg=add_msg, err_msg="")
 
 
 def add_random_friend(username):
-    classes = db.get_classes(username)
-    class_ind = random.randint(0,len(classes) - 1)
-    random_usr = db.get_random_user(classes[class_ind])
+    if username:
+        friend_ids, friends = db.get_one_way_friends(username)
+        classes = db.get_classes(username)
+        if not classes:
+            add_msg = "You are not yet enrolled in any classes."
+            return page_view("friends/populateFriends", ext=".tpl", username=username,
+                             friend_usernames=friends, friend_ids=friend_ids,
+                             add_msg=add_msg, err_msg="")
+        class_ind = random.randint(0, len(classes) - 1)
+        random_usrname = db.get_random_user(classes[class_ind])
+        add_friend(username, random_usrname)
+
 
 def friend_list(username):
     if username:
         friend_ids, friends = db.get_one_way_friends(username)
         return page_view("friends/populateFriends", ext=".tpl", username=username,
-                         friend_usernames=friends, friend_ids=friend_ids, err_msg="")
+                         friend_usernames=friends, friend_ids=friend_ids,
+                         add_msg="", err_msg="")
     else:
         return page_view("invalid", reason="Login before chatting with others!")
 
@@ -167,16 +180,14 @@ def friend_chat(username, friend_id):
     if this_username != username:
         return page_view("friends/populateFriends", ext=".tpl", username=username,
                          friend_usernames=[], friend_ids=[],
-                         err_msg=err_msg)
+                         add_msg="", err_msg=err_msg)
 
     friend_ids, friends = db.get_one_way_friends(username)
     old_chat = db.get_recent_msgs(friend_id)
     old_chat2 = json.dumps(old_chat)
-    print("friendpk")
     friend_pk = db.get_friend_pk(friend_username)
     print(friend_pk)
     key_and_iv = db.get_secret(friend_id)
-    print(friend_id)
     return page_view("friends/chat", ext=".tpl", err_msg="",
                      friend_username=friend_username, friend_pk=friend_pk,
                      username=username, friend_id=friend_id,
@@ -187,6 +198,7 @@ def friend_chat(username, friend_id):
 def save_secret(friend_id, secret):
     if secret != 'None':
         db.add_secret(friend_id, secret)
+
 
 def server_key_gen():
     key = RSA.generate(2048)
@@ -212,7 +224,6 @@ def about():
         Returns the view for the about page
     '''
     return page_view("about", garble=about_garble())
-
 
 
 # Returns a random string each time

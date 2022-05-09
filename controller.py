@@ -215,6 +215,7 @@ def get_friends():
 @app.post('/friends')
 def add_friend():
     add_type = request.forms.get("add-type")
+
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
     if add_type == "add-username":
         friend_username = request.forms.get('username-input')
@@ -223,13 +224,13 @@ def add_friend():
         return model.add_random_friend(username)
 
 
-@app.get('/chat/<friend_id>')
+@app.get('/chat/<friend_id:path>')
 def get_chat_with_friend(friend_id):
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
     return model.friend_chat(username, friend_id)
 
 
-@app.post('/chat/<friend_id>')
+@app.post('/chat/<friend_id:path>')
 def send_msg(friend_id):
     message = request.json.get('message')
     secret = request.json.get('secret')

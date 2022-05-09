@@ -160,6 +160,7 @@ center {
     flex-direction: column;
     box-shadow: 3px 3px 6px #000;
     border: 2px solid #45554d;
+    align-items: center;
 }
 
 .login-section:hover, .register-section:hover {
@@ -193,7 +194,26 @@ center {
     animation: spin 2s linear infinite, colour 1.3s ease-in-out infinite;
     position: relative;
 }
-  
+
+#login-validity, #register-validity {
+    background-color: palevioletred;
+    border: 1px palevioletred solid;
+    padding: 4px;
+    width: fit-content;
+    color: white;
+
+    visibility: hidden;
+}
+
+.bad-login-animation, .bad-register-animation {
+    animation: shake 1s ease-in-out 1;
+    visibility: visible !important;
+}
+
+.add-friend-column {
+    width: 70%;
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg);}
@@ -203,4 +223,12 @@ center {
     0% { border-top: 16px solid #82d5ad;}
     25% { border-top: 16px solid #8757db;}
     65% { border-top: 16px solid #dba0cf;}
+}
+
+@keyframes shake {
+    0% {transform: translateX(0px);}
+    10% {transform: translateX(2px);}
+    20% {transform: translateX(-2px);}
+    30% {transform: translateX(2px);}
+    40% {transform: translateX(0px);}
 }

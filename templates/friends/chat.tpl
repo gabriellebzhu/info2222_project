@@ -13,6 +13,12 @@
         </li>
       % end
     </ul>
+    
+    <div class="add-friend-list">
+      <form id="find-by-class-form">
+        <a href="/friends">Add Friend</a>
+      </form>
+    </div>
   </div>
 
   <div class="chat-column">
@@ -31,7 +37,7 @@
   window.friendPk = "{{!friend_pk}}";
   window.oldChat = {{!old_chat2}};
   window.keyAndIv = "{{!key_and_iv}}";
-  window.friendUsername = "{{!friend_id}}";
+  window.friendId = "{{!friend_id}}";
 </script>
 
 <script src="js/chat_bundle.js"></script>

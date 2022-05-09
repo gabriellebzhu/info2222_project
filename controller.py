@@ -209,8 +209,18 @@ def get_about():
 @app.route('/friends')
 def get_friends():
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
-
     return model.friend_list(username)
+
+
+@app.post('/friends')
+def add_friend():
+    add_type = request.forms.get("add-type")
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    if add_type == "add-username":
+        friend_username = request.forms.get('username-input')
+        return model.add_friend(username, friend_username)
+    else:
+        return model.add_random_friend(username)
 
 
 @app.get('/chat/<friend_id>')

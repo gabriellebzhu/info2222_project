@@ -66,6 +66,9 @@ class SQLDatabase():
         secrets_cols = """friend_id TEXT, key_and_iv TEXT"""
         self.create_table("Secrets", secrets_cols)
 
+        classes_cols = """class_id INTEGER PRIMARY KEY, class_name TEXT, class_code TEXT, admin_user_id TEXT"""
+        self.create_table("Classes", classes_cols)
+
         # Add our admin user
         # salt = os.urandom(16)
         # hashed = sec.hash_the_pass(admin_password, salt)

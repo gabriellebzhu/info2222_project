@@ -28469,17 +28469,20 @@ var forge = require('node-forge');
 var form = document.getElementById('login-form');
 form.addEventListener("submit", function (event) {
     event.preventDefault();
+    document.getElementById('login-validity').classList.remove("bad-login-animation");
+
 
     var pass = document.getElementById("password").value;
     var user = document.getElementById("username").value;
 
     if (pass == '') {
         document.getElementById('login-validity').innerHTML = 'Please enter a password';
-        console.log("AAAHH");
+        document.getElementById('login-validity').classList.add("bad-login-animation");
+        
         return;
     } else if (user == '') {
         document.getElementById('login-validity').innerHTML = 'Please enter a username';
-        console.log("AAAHH");
+        document.getElementById('login-validity').classList.add("bad-login-animation");
         return;
     }
 
@@ -28499,6 +28502,7 @@ var parse_response = function(response) {
       window.location.href = "/friends";
   } else {
       document.getElementById('login-validity').innerHTML = 'Username and password combination are incorrect';
+      document.getElementById('login-validity').classList.add("bad-login-animation");
   }
 
 }

@@ -36,7 +36,7 @@ import controller
 host = '0.0.0.0'
 
 # Test port, change to the appropriate port to host
-port = 8081
+port = 800
 
 # Turn this off for production
 debug = True
@@ -47,9 +47,9 @@ def run_server():
         Runs a bottle server
     '''
 
-    run(app=controller.app
-        host=host, 
-        port=port, 
+    run(app=controller.app,
+        host=host,
+        port=port,
         server='gunicorn',
         certfile='./certs/localhost.crt',
         keyfile='./certs/localhost.key',

@@ -91,7 +91,6 @@ def register_new_user(username, password, pk):
     register = True
     err_str = "Valid!"
 
-
     # if username is in database, error of "USER ALREADY EXISTS"
     user_exists = db.check_user_exists(username=username)
     if user_exists:
@@ -127,6 +126,21 @@ def check_password_security(password, username):
 # FRIENDS
 # -----------------------------------------------------------------------------
 
+def add_friend(username, friend_username):
+    if username and friend_username:
+        if db.add_friend(username, friend_username):
+            return page_view("redirect", ext=".tpl", redirect_to="/friends",
+                             add_msg="Success! Friend added")
+        else:
+            add_msg = "User not found."
+            return page_view("redirect", ext=".tpl", redirect_to="/friends",
+                             add_msg=add_msg)
+
+
+def add_random_friend(username):
+    classes = db.get_classes(username)
+    class_ind = random.randint(0,len(classes) - 1)
+    random_usr = db.get_random_user(classes[class_ind])
 
 def friend_list(username):
     if username:
@@ -171,7 +185,8 @@ def friend_chat(username, friend_id):
 
 
 def save_secret(friend_id, secret):
-    db.add_secret(friend_id, secret)
+    if secret != 'None':
+        db.add_secret(friend_id, secret)
 
 def server_key_gen():
     key = RSA.generate(2048)

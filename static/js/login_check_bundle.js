@@ -28499,6 +28499,7 @@ form.addEventListener("submit", function (event) {
 var parse_response = function(response) {
   console.log(response.message);
   if (response.success === '1') {
+      window.sessionStorage.setItem("loggedIn", "True")
       window.location.href = "/friends";
   } else {
       document.getElementById('login-validity').innerHTML = 'Username and password combination are incorrect';

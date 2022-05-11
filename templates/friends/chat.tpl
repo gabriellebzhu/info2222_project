@@ -1,23 +1,23 @@
 <div class="chatbox">
   <div class="user-column">
-    <p>
-      Welcome back, {{username}}! {{err_msg}}
-      <br>
-      Select a friend to chat with:
-    </p>
+    <div>
+      <p>
+        Welcome back, {{username}}! {{err_msg}}
+        <br>
+        Select a friend to chat with:
+      </p>
 
-    <ul id="friend-list">
-      % for i in range(0, len(friend_usernames)):
-        <li>
-          <a href="/chat/{{friend_ids[i]}}">{{friend_usernames[i]}}</a>
-        </li>
-      % end
-    </ul>
-    
+      <ul id="friend-list">
+        % for i in range(0, len(friend_usernames)):
+          <li>
+            <a href="/chat/{{friend_ids[i]}}">{{friend_usernames[i]}}</a>
+          </li>
+        % end
+      </ul>
+    </div>
+
     <div class="add-friend-list">
-      <form id="find-by-class-form">
-        <a href="/friends">Add Friend</a>
-      </form>
+      <a href="/friends">Add Friend</a>
     </div>
   </div>
 

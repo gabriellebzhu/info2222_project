@@ -10,15 +10,13 @@
 <title>Simple Student Templating Solutions</title>
 </head>
 
-<p>
-<ul>
-  <li><a class="active" href="/home">Home</a></li>
-  <li><a href="/login">Login</a></li>
-  <li><a href="/register">Register</a></li>
-  <li id="friends"><a href="/friends">Chats</a></li>
-  <li><a href="/about">About</a></li>
-</ul>
-</p>
+<div class="header-menu-section">
+  <h1 id="title" href="/home">NoThreeDots</h1>
+  <ul id="header-menu">
+  </ul>
+</div>
+<script src="js/header.js"></script>
+
 <center>
   <!-- <h2>Simple Student Templating Solutions</h2> -->
 

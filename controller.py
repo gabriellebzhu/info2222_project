@@ -103,7 +103,7 @@ def get_login_controller():
     return model.login_form()
 
 
-# Display the login page
+# Display the register page
 @app.get('/register')
 def get_register_controller():
     '''
@@ -112,6 +112,18 @@ def get_register_controller():
         Serves the login page
     '''
     return model.register_form()
+
+
+# Display the logout page
+@app.route('/logout', methods=['POST', 'GET'])
+def get_logout_controller():
+    '''
+        get_logout
+
+        Serves the login page
+    '''
+    response.delete_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.logout()
 
 
 # -----------------------------------------------------------------------------

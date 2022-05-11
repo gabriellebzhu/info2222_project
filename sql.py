@@ -51,6 +51,9 @@ class SQLDatabase():
                        salt TEXT, pk TEXT, admin INTEGER DEFAULT 0"""
         self.create_table("Users", user_cols)
 
+        admin_cols = """username TEXT, admin_type TEXT"""
+        self.create_table("Admins", admin_cols)
+
         friends_cols = """friend_id TEXT, user_id1 INTEGER, user_id2 INTEGER"""
         self.create_table("Friends", friends_cols)
 
@@ -183,6 +186,22 @@ class SQLDatabase():
             return True
         else:
             return False
+
+    def get_is_admin(self, username):
+        sql_query = """
+                SELECT 1
+                FROM Admins
+                WHERE username = '{username}'
+            """
+        sql_query = sql_query.format(username=username)
+
+        self.execute(sql_query)
+
+        # If our query returns
+        if self.cur.fetchone():
+            return 1
+        else:
+            return 0
 
     # -----------------------------------------------------------------------------
     # Classes 

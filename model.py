@@ -45,7 +45,11 @@ def login_form():
         Returns the view for the login_form
     '''
     # data = {"to_display":"HI, how are you"}
-    return page_view("login", data=get_server_public_key())
+    return page_view("login", data=get_server_public_key(), is_admin=0)
+
+def logout():
+    return page_view("logout", ext=".tpl")
+
 
 #-----------------------------------------------------------------------------
 
@@ -79,7 +83,8 @@ def login_check(username, password, pk):
 
     if login:
         # db.user_pk_update(username, pk)
-        return True, page_view("valid", name=username, is_register="false")
+        is_admin = db.get_is_admin(username)
+        return True, page_view("valid", name=username, is_register="false", is_admin=is_admin)
     else:
         return False, page_view("invalid", reason=message)
 

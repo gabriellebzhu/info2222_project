@@ -189,7 +189,7 @@ def server_key_gen():
 # Profile
 #-----------------------------------------------------------------------------
 
-def profile(username):
+def profile():
     '''
         profile
         Returns the view for the profile

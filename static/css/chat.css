@@ -13,6 +13,16 @@
     float: left;
     width: 30%;
     background-color: #aadd;
+    justify-content: space-between;
+    display: flex;
+    flex-direction: column;
+}
+
+.add-friend-list {
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #message-form {
@@ -54,4 +64,3 @@
     padding: 0.5rem 1rem; 
     float: none;
 }
-

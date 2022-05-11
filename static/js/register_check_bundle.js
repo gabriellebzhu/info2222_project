@@ -28470,19 +28470,21 @@ var form = document.getElementById('register-form');
 form.addEventListener("submit", function (event) {
     toggle_load()  // display the loading icon
     event.preventDefault();  // stop the form from being submitted
+    document.getElementById('register-validity').classList.remove("bad-register-animation");
+
 
     var pass = document.getElementById("password").value;
     var user = document.getElementById("username").value;
 
     if (pass == '') {
         document.getElementById('register-validity').innerHTML = 'Please enter a password';
-        console.log("AAAHH");
+        document.getElementById('register-validity').classList.add("bad-register-animation");
         toggle_load()
 
         return;
     } else if (user == '') {
         document.getElementById('register-validity').innerHTML = 'Please enter a username';
-        console.log("AAAHH");
+        document.getElementById('register-validity').classList.add("bad-register-animation");
         toggle_load()
 
         return;
@@ -28506,6 +28508,7 @@ var parse_response = function(response) {
   } else {
         toggle_load()
         document.getElementById('register-validity').innerHTML = 'Username taken!';
+        document.getElementById('register-validity').classList.add("bad-register-animation");
   }
 }
 

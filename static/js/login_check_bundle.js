@@ -28469,17 +28469,21 @@ var forge = require('node-forge');
 var form = document.getElementById('login-form');
 form.addEventListener("submit", function (event) {
     event.preventDefault();
+    window.sessionStorage.setItem("isAdmin", "False")
+    document.getElementById('login-validity').classList.remove("bad-login-animation");
+
 
     var pass = document.getElementById("password").value;
     var user = document.getElementById("username").value;
 
     if (pass == '') {
         document.getElementById('login-validity').innerHTML = 'Please enter a password';
-        console.log("AAAHH");
+        document.getElementById('login-validity').classList.add("bad-login-animation");
+        
         return;
     } else if (user == '') {
         document.getElementById('login-validity').innerHTML = 'Please enter a username';
-        console.log("AAAHH");
+        document.getElementById('login-validity').classList.add("bad-login-animation");
         return;
     }
 
@@ -28495,10 +28499,14 @@ form.addEventListener("submit", function (event) {
 
 var parse_response = function(response) {
   console.log(response.message);
+  console.log("IS ADMIN? " + response.isAdmin);
   if (response.success === '1') {
+    window.sessionStorage.setItem("loggedIn", "True");
+    window.sessionStorage.setItem("isAdmin", response.isAdmin);
       window.location.href = "/friends";
   } else {
       document.getElementById('login-validity').innerHTML = 'Username and password combination are incorrect';
+      document.getElementById('login-validity').classList.add("bad-login-animation");
   }
 
 }

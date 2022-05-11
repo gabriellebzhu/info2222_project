@@ -3,11 +3,11 @@ let isAdmin = window.sessionStorage.getItem("isAdmin");
 
 if (loggedIn === "True") {
     addMenuItem("/posts", "Posts");
-    addMenuItem("/friends", "Friends");
-    addMenuItem("/profile", "Settings");
+    addMenuItem("/friends", "Chats");
     if (isAdmin === "True") {
         addMenuItem("/manage", "Manage");
     }
+    addMenuItem("/profile", "Settings");
     addMenuItem("/logout", "Logout");
 } else {
     addMenuItem("/login", "Login");

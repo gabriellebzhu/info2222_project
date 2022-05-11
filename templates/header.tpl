@@ -11,14 +11,9 @@
 </head>
 
 <div class="header-menu-section">
-  <h1 id="title" href="/home">NoThreeDots</h1>
+  <h1 id="title"><a href="/home">NoThreeDots</a></h1>
   <ul id="header-menu">
   </ul>
 </div>
 <script src="js/header.js"></script>
 
-<center>
-  <!-- <h2>Simple Student Templating Solutions</h2> -->
-
-
-<!-- <h3><i>Because the usability is more important than the back end for now.</i></h3> -->

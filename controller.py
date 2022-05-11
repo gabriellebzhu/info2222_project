@@ -92,6 +92,19 @@ def get_index():
 # -----------------------------------------------------------------------------
 
 
+# Redirect to accounts/profile
+@app.get('/profile')
+def get_profile():
+    '''
+        get_index
+        
+        Serves the profile page
+    '''
+    return model.profile()
+
+# -----------------------------------------------------------------------------
+
+
 # Display the login page
 @app.get('/login')
 def get_login_controller():

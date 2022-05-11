@@ -232,6 +232,21 @@ def server_key_gen():
     file_out.write(public_key)
     file_out.close()
 
+#-----------------------------------------------------------------------------
+# Profile
+#-----------------------------------------------------------------------------
+
+def profile():
+    '''
+        profile
+        Returns the view for the profile
+    '''
+    # if username:
+    #     pass
+    # else:
+    #     return page_view("invalid", reason="Login before viewing profile!")
+
+    return page_view("profile")
 
 # -----------------------------------------------------------------------------
 # Classes

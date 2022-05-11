@@ -103,7 +103,7 @@ def get_login_controller():
     return model.login_form()
 
 
-# Display the login page
+# Display the register page
 @app.get('/register')
 def get_register_controller():
     '''
@@ -112,6 +112,18 @@ def get_register_controller():
         Serves the login page
     '''
     return model.register_form()
+
+
+# Display the logout page
+@app.route('/logout', methods=['POST', 'GET'])
+def get_logout_controller():
+    '''
+        get_logout
+
+        Serves the login page
+    '''
+    response.delete_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.logout()
 
 
 # -----------------------------------------------------------------------------
@@ -139,9 +151,9 @@ def post_login():
 
     if check[0]:
         response.set_cookie("account", username, secret=sec.COOKIE_SECRET)
-        responding_msg = {'message': 'successful login', 'success': '1'}
+        responding_msg = {'message': 'successful login', 'success': '1', 'isAdmin':check[1]}
     else:
-        responding_msg = {'message': 'bad login', 'success': '0'}
+        responding_msg = {'message': 'bad login', 'success': '0', 'isAdmin':check[1]}
 
     return responding_msg
 
@@ -209,17 +221,28 @@ def get_about():
 @app.route('/friends')
 def get_friends():
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
-
     return model.friend_list(username)
 
 
-@app.get('/chat/<friend_id>')
+@app.post('/friends')
+def add_friend():
+    add_type = request.forms.get("add-type")
+
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    if add_type == "add-username":
+        friend_username = request.forms.get('username-input')
+        return model.add_friend(username, friend_username)
+    else:
+        return model.add_random_friend(username)
+
+
+@app.get('/chat/<friend_id:path>')
 def get_chat_with_friend(friend_id):
     username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
     return model.friend_chat(username, friend_id)
 
 
-@app.post('/chat/<friend_id>')
+@app.post('/chat/<friend_id:path>')
 def send_msg(friend_id):
     message = request.json.get('message')
     secret = request.json.get('secret')
@@ -232,6 +255,30 @@ def send_msg(friend_id):
 # -----------------------------------------------------------------------------
 
 
+@app.route('/manage')
+def manage_classes():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.manage_form(username)
+
+
+@app.post('/manage')
+def manage_action():
+    manage_type = request.forms.get("manage-type")
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    if manage_type == "add-class":
+        class_code = request.forms.get('class-code-input')
+        class_name = request.forms.get('class-name-input')
+        return model.add_class(class_code, class_name, username)
+    elif manage_type == "del-class":
+        class_info = request.forms.get('class-info-input')
+        return model.del_class(class_info, username)
+
+
+
+# -----------------------------------------------------------------------------
+
+
 # Help with debugging
 @app.post('/debug/<cmd:path>')
 def post_debug(cmd):
@@ -239,7 +286,6 @@ def post_debug(cmd):
 
 
 # -----------------------------------------------------------------------------
-
 
 # 404 errors, use the same trick for other types of errors
 @app.error(404)

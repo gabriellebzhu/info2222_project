@@ -28472,7 +28472,9 @@ let friendPk = forge.pki.publicKeyFromPem(friendPem);
 
 function getKeyIv() {
     let keyAndIv = null;
-    if (window.oldChat.length === 0) {
+    let msgNum = document.getElementById('message-list').getElementsByTagName('li').length;
+    console.log("msgnum: " + msgNum);
+    if ((window.oldChat.length === 0) && (msgNum == 0)) {
         var key = forge.random.getBytesSync(16);
         var iv = forge.random.getBytesSync(16);
         
@@ -28516,14 +28518,11 @@ function signEncryptKeyIv(keyAndIv) {
 function decryptKeyIv(signEncSecret) {
     var encSecHex = signEncSecret.slice(0,512);
     var sigSecHex = signEncSecret.slice(512, 1024);
-    console.log(encSecHex)
     var encSecUnhex = forge.util.hexToBytes(encSecHex);
     var sigSecUnhex = forge.util.hexToBytes(sigSecHex);
-    console.log(encSecUnhex)
 
     var privatePem = window.localStorage.getItem(window.username + 'private_pem');
     var myPrivateKey = forge.pki.privateKeyFromPem(privatePem);
-
 
     var decryptedKeyAndIv = myPrivateKey.decrypt(encSecUnhex);
 
@@ -28551,7 +28550,6 @@ function getIvFromKeyIv(keyAndIv) {
 
 function symEncrypt(message, keyAndIv) {
     var key = getKeyFromKeyIv(keyAndIv);
-    console.log(key);
     var iv = getIvFromKeyIv(keyAndIv);
 
     var cipher = forge.cipher.createCipher('AES-CBC', key);
@@ -28582,11 +28580,21 @@ function sendMsg(message) {
     // encrypt message with pub key of friend
     console.log("msg: " + message);
 
+    let firstTime = true;
+    if (window.localStorage.getItem(window.friendId)) {
+      firstTime = false;
+    }
+
     var keyAndIv = getKeyIv();
 
     var encSecret = signEncryptKeyIv(keyAndIv);
     var encMessage = symEncrypt(message, keyAndIv);
     console.log("encrypted msg: " + encMessage);
+
+    if (!firstTime) {
+      encSecret = "None";
+    }
+
 
     $.ajax({
         type: "POST",
@@ -28657,7 +28665,6 @@ function disp_old_msgs() {
     }
 
 };
-
 
 window.onload = disp_old_msgs();
 

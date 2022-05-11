@@ -41,16 +41,19 @@ class View():
             :: tailer :: Tailer template to use
             :: kwargs :: Keyword arguments to pass
         '''
+        self.template_extension = '.tpl'
         header_template = self.load_template(header)
+        self.template_extension = '.html'
         tailer_template = self.load_template(tailer)
+
         self.template_extension = ext
         body_template = self.load_template(filename)
         self.template_extension = '.html'
 
         rendered_template = self.render(
-            body_template=body_template, 
-            header_template=header_template, 
-            tailer_template=tailer_template, 
+            body_template=body_template,
+            header_template=header_template,
+            tailer_template=tailer_template,
             **kwargs)
 
         return rendered_template

@@ -111,7 +111,7 @@ body{
 
 .typed-out {
     overflow: hidden;
-    border-right: .15em solid white;
+    border-right: .15em solid transparent;
     font-size: 1.6rem;
     width: 0;
     animation: 

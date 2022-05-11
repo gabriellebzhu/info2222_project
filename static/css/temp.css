@@ -82,18 +82,18 @@ center {
     color: #acb6bb;
 }
 
-.chatbox {
+.column-container {
     display: flex;
     height: 70%;
 }
 
-.chat-column {
+.right-column {
     float: right;
     width: 70%;
     background: #2c2e2f;
 }
 
-.user-column {
+.left-column {
     float: left;
     width: 30%;
     background: #323536;
@@ -150,7 +150,7 @@ center {
 /* #friend-list {
 } */
 
-#friend-list > li {
+.left-column-list > li {
     padding: 0.5rem 1rem; 
     float: none;
 }
@@ -216,9 +216,9 @@ center {
     visibility: visible !important;
 }
 
-.add-friend-column {
+/* .add-friend-column {
     width: 70%;
-}
+} */
 
 
 

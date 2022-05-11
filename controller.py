@@ -151,9 +151,9 @@ def post_login():
 
     if check[0]:
         response.set_cookie("account", username, secret=sec.COOKIE_SECRET)
-        responding_msg = {'message': 'successful login', 'success': '1'}
+        responding_msg = {'message': 'successful login', 'success': '1', 'isAdmin':check[1]}
     else:
-        responding_msg = {'message': 'bad login', 'success': '0'}
+        responding_msg = {'message': 'bad login', 'success': '0', 'isAdmin':check[1]}
 
     return responding_msg
 
@@ -255,6 +255,30 @@ def send_msg(friend_id):
 # -----------------------------------------------------------------------------
 
 
+@app.route('/manage')
+def manage_classes():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.manage_form(username)
+
+
+@app.post('/manage')
+def manage_action():
+    manage_type = request.forms.get("manage-type")
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    if manage_type == "add-class":
+        class_code = request.forms.get('class-code-input')
+        class_name = request.forms.get('class-name-input')
+        return model.add_class(class_code, class_name, username)
+    elif manage_type == "del-class":
+        class_info = request.forms.get('class-info-input')
+        return model.del_class(class_info, username)
+
+
+
+# -----------------------------------------------------------------------------
+
+
 # Help with debugging
 @app.post('/debug/<cmd:path>')
 def post_debug(cmd):
@@ -262,7 +286,6 @@ def post_debug(cmd):
 
 
 # -----------------------------------------------------------------------------
-
 
 # 404 errors, use the same trick for other types of errors
 @app.error(404)

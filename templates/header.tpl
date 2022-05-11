@@ -7,7 +7,7 @@
 <script src="js/script_head.js"></script>
 <!-- <script src="js/script_encryption.js"></script> -->
 
-<title>Simple Student Templating Solutions</title>
+<title>NoThreeDots</title>
 </head>
 
 <div class="header-menu-section">

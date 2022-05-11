@@ -82,11 +82,10 @@ def login_check(username, password, pk):
             login = False
 
     if login:
-        # db.user_pk_update(username, pk)
         is_admin = db.get_is_admin(username)
-        return True, page_view("valid", name=username, is_register="false", is_admin=is_admin)
+        return True, f"{is_admin}"
     else:
-        return False, page_view("invalid", reason=message)
+        return False, "False"
 
 
 # Register User
@@ -134,10 +133,15 @@ def check_password_security(password, username):
 def add_friend(username, friend_username):
     if username and friend_username:
         friend_ids, friends = db.get_one_way_friends(username)
-        if db.add_friend(username, friend_username):
+        check = db.add_friend(username, friend_username)
+        if check is True:
             return page_view("friends/populateFriends", ext=".tpl", username=username,
                              friend_usernames=friends, friend_ids=friend_ids,
                              add_msg="Successfully added!", err_msg="")
+        elif check == -1:
+            return page_view("friends/populateFriends", ext=".tpl", username=username,
+                             friend_usernames=friends, friend_ids=friend_ids, err_msg="",
+                             add_msg=f"You are already friends with {friend_username}")
         else:
             add_msg = "User not found."
             return page_view("friends/populateFriends", ext=".tpl", username=username,
@@ -154,8 +158,19 @@ def add_random_friend(username):
             return page_view("friends/populateFriends", ext=".tpl", username=username,
                              friend_usernames=friends, friend_ids=friend_ids,
                              add_msg=add_msg, err_msg="")
-        class_ind = random.randint(0, len(classes) - 1)
-        random_usrname = db.get_random_user(classes[class_ind])
+
+        while True:
+            class_ind = random.randint(0, len(classes) - 1)
+            random_usrname = db.get_random_user(username, classes[class_ind])
+            if random_usrname:
+                break
+
+            classes.remove(classes[class_ind])
+            if len(classes) < 1:
+                add_msg = "No new friends to add from any of your classes."
+                return page_view("friends/populateFriends", ext=".tpl", username=username,
+                                 friend_usernames=friends, friend_ids=friend_ids,
+                                 add_msg=add_msg, err_msg="")
         add_friend(username, random_usrname)
 
 
@@ -216,6 +231,95 @@ def server_key_gen():
     file_out = open("key/public.pem", "wb")
     file_out.write(public_key)
     file_out.close()
+
+
+# -----------------------------------------------------------------------------
+# Classes
+# -----------------------------------------------------------------------------
+
+
+def manage_form(username):
+    if username and db.get_is_admin(username):
+        classes = db.get_admin_classes(username)
+        return page_view("admin/manage", ext=".tpl", username=username,
+                         classes=classes,
+                         msg="", err_msg="")
+    elif username:
+        return page_view("invalid", reason="You do not have access to this page.")
+    else:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+
+def add_class(class_code, class_name, admin_username):
+    if admin_username and db.get_is_admin(admin_username):
+        pass
+    elif admin_username:
+        return page_view("invalid", reason="You do not have access to this page.")
+    else:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    classes = db.get_admin_classes(admin_username)
+
+    if class_code:
+        class_code = class_code.upper()
+    else:
+        return page_view("admin/manage", ext=".tpl", username=admin_username,
+                         classes=classes,
+                         msg="Please input a class code!", err_msg="")
+
+    if class_name:
+        class_name = class_name.title()
+    else:
+        return page_view("admin/manage", ext=".tpl", username=admin_username,
+                         classes=classes,
+                         msg="Please input a class name", err_msg="")
+
+    check = db.add_class(class_code, class_name, admin_username)
+
+    if check == 0:
+        return page_view("admin/manage", ext=".tpl", username=admin_username,
+                         classes=classes, msg="You are already managing this class", err_msg="")
+    elif check == 2:
+        classes = db.get_admin_classes(admin_username)
+        msg = f"You have been added as an admin to {class_code}: {class_name}"
+        return page_view("admin/manage", ext=".tpl", username=admin_username,
+                         classes=classes, msg=msg, err_msg="")
+    else:
+        classes = db.get_admin_classes(admin_username)
+        msg = f"You have created the class {class_code}: {class_name}."
+        return page_view("admin/manage", ext=".tpl", username=admin_username,
+                         classes=classes, msg=msg, err_msg="")
+
+
+def del_class(class_info, username):
+    if username and db.get_is_admin(username):
+        pass
+    elif username:
+        return page_view("invalid", reason="You do not have access to this page.")
+    else:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    classes = db.get_admin_classes(username)
+
+    if not class_info:
+        msg = "Please enter the class code or the class name of the class to be deleted"
+        return page_view("admin/manage", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="")
+
+    check, class_code, class_name = db.del_class(class_info, username)
+    if check == 0:
+        return page_view("admin/manage", ext=".tpl", username=username,
+                         classes=classes, msg="No such class", err_msg="")
+    elif check == 1:
+        classes = db.get_admin_classes(username)
+        msg = f"You deleted {class_code}: {class_name}"
+        return page_view("admin/manage", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="")
+    else:
+        classes = db.get_admin_classes(username)
+        msg = f"You must be an administrator of {class_code}: {class_name} to delete it."
+        return page_view("admin/manage", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="")
 
 
 # -----------------------------------------------------------------------------

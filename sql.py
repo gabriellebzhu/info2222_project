@@ -2,6 +2,7 @@ from random import random
 import secrets
 import sqlite3
 import os
+from tkinter.messagebox import NO
 
 import sec_helper as sec
 
@@ -194,18 +195,100 @@ class SQLDatabase():
                 WHERE username = '{username}'
             """
         sql_query = sql_query.format(username=username)
-
+        print(username)
         self.execute(sql_query)
 
         # If our query returns
         if self.cur.fetchone():
-            return 1
+            return True
         else:
-            return 0
+            return False
 
     # -----------------------------------------------------------------------------
     # Classes 
     # -----------------------------------------------------------------------------
+
+    def add_class(self, class_code, class_name, admin):
+        sql_cmd = """
+                INSERT INTO Classes
+                VALUES(NULL, "{class_name}", "{class_code}", {admin_id})
+            """
+
+        admin_id_cmd = f"SELECT id From Users Where username='{admin}'"
+        self.execute(admin_id_cmd)
+        admin_id = self.cur.fetchone()[0]
+
+        exists_cmd = f"SELECT 1 From Classes WHERE admin_user_id='{admin_id}' AND class_code='{class_code}'"
+        self.execute(exists_cmd)
+        if self.cur.fetchone():
+            return 0
+
+        add_admin_cmd = f"SELECT 1 From Classes WHERE class_code='{class_code}'"
+        self.execute(add_admin_cmd)
+        not_original = self.cur.fetchone()
+
+        sql_cmd = sql_cmd.format(class_name=class_name, class_code=class_code,
+                                 admin_id=admin_id)
+
+        self.execute(sql_cmd)
+        self.commit()
+
+        if not_original:
+            # Current user was not the original admin, but now has become one.
+            return 2
+        return 1
+
+    def del_class(self, class_info, username):
+        sql_cmd = ""
+        del_type = 0
+        class_name = ""
+        class_code = ""
+
+        class_info.upper()
+        is_code_cmd = f"SELECT Classes.class_name, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_code='{class_info}'"
+
+        self.execute(is_code_cmd)
+        info = self.cur.fetchall()
+        if info:
+            admins = [item[1] for item in info]
+            authorised = username in admins
+
+            if authorised:
+                sql_cmd = f"DELETE FROM Classes WHERE class_code='{class_info}'"
+                del_type = 1
+            else:
+                del_type = -1
+
+            class_code = class_info
+            class_name = info[0][0]
+
+        class_info.title()
+        is_name_cmd = f"SELECT Classes.class_code, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_name='{class_info}'"
+
+        self.execute(is_name_cmd)
+        info = self.cur.fetchall()
+        if info:
+            admins = [item[1] for item in info]
+            authorised = username in admins
+
+            if authorised:
+                sql_cmd = f"DELETE FROM Classes WHERE class_name='{class_info}'"
+                del_type = 1
+            else:
+                del_type = -1
+
+            class_name = class_info
+            class_code = info[0][0]
+
+
+        if not sql_cmd:
+            return del_type, "", ""
+
+        self.execute(sql_cmd)
+        self.commit()
+
+        return del_type, class_code, class_name
+
 
     def get_classes(self, username):
         sql_query = """
@@ -221,19 +304,41 @@ class SQLDatabase():
         classes = [class_code[0] for class_code in self.cur.fetchall()]
         return classes
 
-    def get_random_user(self, class_code):
+    def get_admin_classes(self, admin):
+        sql_query = """
+                SELECT Classes.class_code
+                FROM Classes
+                INNER JOIN Users ON Classes.admin_user_id = Users.id
+                WHERE Users.username = '{admin}'
+            """
+
+        sql_query = sql_query.format(admin=admin)
+
+        self.execute(sql_query)
+
+        classes = [class_code[0] for class_code in self.cur.fetchall()]
+        return classes
+
+    def get_random_user(self, username, class_code):
         sql_query = """
                 SELECT student_username
                 FROM Enrollments
                 WHERE class_code = '{class_code}'
                 AND visible=1
+
+                EXCEPT
+
+                SELECT user_id2
+                FROM Friends
+                WHERE user_id1='{username}'
             """
 
-        sql_query = sql_query.format(class_code=class_code)
+        sql_query = sql_query.format(class_code=class_code, username=username)
 
         self.execute(sql_query)
-
         students = [student[0] for student in self.cur.fetchall()]
+        if len(students) < 1:
+            return None
         student_index = random.randint(0, len(students) - 1)
 
         return students[student_index]
@@ -249,14 +354,20 @@ class SQLDatabase():
         self.execute(user_id_1_cmd)
         result = self.cur.fetchone()
         if not result:
-            return False
+            return 0
         user_id1 = result[0]
 
         self.execute(user_id_2_cmd)
         result = self.cur.fetchone()
         if not result:
-            return False
+            return 0
         user_id2 = result[0]
+
+        exist_cmd = f"SELECT 1 FROM Friends WHERE user_id1='{user_id1}' AND user_id2 = '{user_id2}'"
+        self.execute(exist_cmd)
+        result = self.cur.fetchone()
+        if result:
+            return -1
 
         # allocate random friend id for friend pair
         while True:

@@ -1,4 +1,4 @@
-
+<center>
 <div class="column-container" id="chatbox">
   <div class="left-column" id="user-column">
     <p>
@@ -43,3 +43,4 @@
     </div>
   </div>
 </div>
+</center>

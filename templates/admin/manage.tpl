@@ -1,3 +1,6 @@
+<center>
+
+
 <div class="column-container">
     <div class="left-column" id="class-list-section">
         % if len(classes) == 0:
@@ -47,3 +50,5 @@
     </div>
 
 </div>
+
+</center>

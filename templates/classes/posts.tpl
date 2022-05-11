@@ -1,9 +1,11 @@
+<center>
+
 <div class="column-container">
-    <div class="left-column" id="class-list-section">
+    <div class="left-column" id="posts-filter">
         % if len(classes) == 0:
           <p>You currently have not joined any classes</p>
         % else:
-          <p>Select a class to manage:</p>
+          <p>Select a class:</p>
         
         % end
 
@@ -47,3 +49,4 @@
     </div>
 
 </div>
+</center>

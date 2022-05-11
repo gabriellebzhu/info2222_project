@@ -1,3 +1,4 @@
+<center>
 <div class="column-container" id="chatbox">
   <div class="left-column" id="user-column">
     <div>
@@ -31,6 +32,7 @@
     </form>
   </div>
 </div>
+</center>
 
 <script type="text/javascript">
   window.username = "{{!username}}";

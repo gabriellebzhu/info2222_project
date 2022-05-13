@@ -8,11 +8,30 @@
         </div>
 
         <div id="post-view-title">
-            <p>{{!title}}</p>
-            <div>
+            <h3>{{!title}}</h3>
+            <div id="likes">
                 <p>{{!likes}}</p>
                 <button>Like</button>
             </div>
+        </div>
+
+        <div class="post-view-entry" id="post-view-meta">
+            <p>Posted by <a href="#top">{{username}}</a></p>
+            <p>Posted at {{!date}}</p>
+        </div>
+
+
+        <div>
+            Attachments:
+            <div class="post-view-entry" id="post-view-attachments">
+                % for i in range(0, len(file_paths)):
+                    <a href="{{!file_paths[i]}}">{{!file_names[i]}}</a>
+                % end
+            </div>
+        </div>
+
+        <div class="allow-newline" id="post-view-body">
+            {{!body}}
         </div>
 
         <div class="post-view-entry" id="post-view-tags">
@@ -27,23 +46,6 @@
                 </div>
                 % end
             <!-- </div> -->
-        </div>
-
-        <div class="post-view-entry" id="post-view-meta">
-            <p>Posted by <a href="#top">{{username}}</a></p>
-            <p>Posted at {{!date}}</p>
-        </div>
-
-        <div class="post-view-entry" id="post-view-attachments">
-            % for i in range(0, len(file_paths)):
-                <a href="{{!file_paths[i]}}">{{!file_names[i]}}</a>
-            % end
-        </div>
-
-        <div class="post-view-entry" id="post-view-body">
-            <p>
-                {{body}}
-            </p>
         </div>
 
     </div>

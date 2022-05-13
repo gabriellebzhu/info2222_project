@@ -1,0 +1,1 @@
+<embed src="/uploads/{{!source}}" width="500" height="375">

@@ -5,12 +5,14 @@
     It should exist as a separate layer to any database or data structure that you might be using
     Nothing here should be stateful, if it's stateful let the database handle it
 '''
+from fileinput import filename
 import json
+from pydoc import classname
 import view
 import random
 import sql
 
-from bottle import request
+from bottle import request, static_file
 import os
 
 import sec_helper as sec
@@ -335,6 +337,113 @@ def del_class(class_info, username):
         msg = f"You must be an administrator of {class_code}: {class_name} to delete it."
         return page_view("admin/manage", ext=".tpl", username=username,
                          classes=classes, msg=msg, err_msg="")
+
+
+def join_class(class_info, username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    check, class_code, class_name = db.join_class(class_info, username)
+    classes = db.get_classes(username)
+    if check == 0:
+        msg = f"No class with the code or name '{class_info}'"
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="")
+    elif check == -1:
+        msg = f"You are already enrolled in {class_code}: {class_name}"
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="")
+    elif check == 1:
+        msg = f"You have successfully enrolled in {class_code}: {class_name}."
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="")
+
+
+
+
+# -----------------------------------------------------------------------------
+# Posts
+# -----------------------------------------------------------------------------
+
+
+def show_posts(username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    classes = db.get_classes(username)
+    classes += db.get_admin_classes(username)
+
+    return page_view("classes/join", ext=".tpl", username=username, classes=classes, msg="", err_msg="")
+
+
+def new_post_form(username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    classes = db.get_classes(username)
+    classes += db.get_admin_classes(username)
+    return page_view("classes/newPost", ext=".tpl", username=username, classes=classes,
+                     success="0", post_id=None)
+
+
+def view_post(username, post_id):
+    check, data = db.get_post_from_id(username, post_id)
+
+    if not check:
+        return page_view("classes/notFound")
+
+    post_id, title, author, date = data[0], data[1], data[2], data[3]
+    class_code, tags, body, upload_paths, likes = data[4], data[5], data[6], data[7], data[8]
+    tags = tags.split()
+    file_paths = upload_paths.split()
+    file_names = [url.split("/")[-1] for url in file_paths]
+
+    return page_view("classes/postView", ext=".tpl", post_id=post_id, title=title, likes=likes,
+                     post_class=class_code, tags=tags, username=author, date=date,
+                     file_paths=file_paths, file_names=file_names, body=body)
+
+
+def create_post(post_title, username, date,
+                class_code, tags, body, uploads):
+    upload_paths = []
+    for upload in uploads:
+        save_path = get_save_path(upload)
+        upload.save(save_path)
+        upload_paths.append(save_path)
+
+    upload_paths = " ".join(upload_paths)
+
+    post_id = db.add_post(post_title, username, date, class_code, tags, body, upload_paths)
+
+    return page_view("redirect", ext=".tpl", redirect_to=f"/posts/{post_id}", prev="create")
+
+
+def get_save_path(upload):
+    name, ext = os.path.splitext(upload.filename)
+
+    if ' ' in name:
+        name = name.replace(' ', '_')
+
+    ext = ext[1:]
+
+    path = f"uploads/{ext}/{name}.{ext}"
+    if not os.path.exists(f"uploads/{ext}"):
+        os.mkdir(f"uploads/{ext}")
+
+    if os.path.exists(path):
+        i = 1
+        while True:
+            if not os.path.exists(f"uploads/{ext}/{name}-{i}.{ext}"):
+                path = f"uploads/{ext}/{name}-{i}.{ext}"
+                break
+            i += 1
+
+    return path
+
+
+def view_source(source):
+    print("hey1:", source)
+    return static_file(source, root='uploads/')
 
 
 # -----------------------------------------------------------------------------

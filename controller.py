@@ -10,6 +10,7 @@ import bottle
 from bottle import route, get, post, error, request, response, static_file, template
 import model
 import sec_helper as sec
+from datetime import datetime
 import json
 
 app = bottle.Bottle()
@@ -288,7 +289,63 @@ def manage_action():
         return model.del_class(class_info, username)
 
 
+# -----------------------------------------------------------------------------
 
+
+@app.route('/posts')
+def show_posts():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.show_posts(username)
+
+
+@app.post('/posts')
+def post_action():
+    post_type = request.forms.get("post-type")
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    if post_type == "join-class":
+        class_info = request.forms.get('class-info-input')
+        return model.join_class(class_info, username)
+    # elif manage_type == "del-class":
+    #     class_info = request.forms.get('class-info-input')
+    #     return model.del_class(class_info, username)
+
+
+@app.route('/posts/new')
+def new_post():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.new_post_form(username)
+
+
+@app.post('/posts/new')
+def add_post():
+    post_title = request.forms.get("post-title")
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    today = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    class_code = request.forms.get("post-class-selector")
+    tags = request.forms.get("post-tags")
+    body = request.forms.get("post-body")
+    uploads = request.files.getall("post-attachments")
+
+    return model.create_post(post_title, username, today,
+                             class_code, tags, body, uploads)
+
+
+@app.route('/posts/<post_id:int>')
+def new_post(post_id):
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    return model.view_post(username, post_id)
+
+
+@app.route('/uploads/<source:path>')
+def new_post(source=None):
+    if source is not None:
+        return model.view_source(source)
+
+
+
+# 
 # -----------------------------------------------------------------------------
 
 

@@ -1,3 +1,5 @@
+from getopt import getopt
+from pydoc import classname
 from random import random
 import secrets
 import sqlite3
@@ -70,10 +72,8 @@ class SQLDatabase():
         enrolled_cols = """class_code TEXT, student_username TEXT, visible INTEGER"""
         self.create_table("Enrollments", enrolled_cols)
 
-        # Add our admin user
-        # salt = os.urandom(16)
-        # hashed = sec.hash_the_pass(admin_password, salt)
-        # self.add_use r('admin', hashed, salt=salt, public_key="test_key", admin=1)
+        post_cols = """post_id INTEGER PRIMARY KEY, title TEXT, author_username TEXT, date TEXT, class_code TEXT, tags TEXT, body TEXT, upload TEXT, likes INTEGER"""
+        self.create_table("Posts", post_cols)
 
     def create_table(self, name, columns):
         self.cur.execute("""SELECT count(name)
@@ -244,8 +244,7 @@ class SQLDatabase():
         class_name = ""
         class_code = ""
 
-        class_info.upper()
-        is_code_cmd = f"SELECT Classes.class_name, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_code='{class_info}'"
+        is_code_cmd = f"SELECT Classes.class_name, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_code='{class_info.upper()}'"
 
         self.execute(is_code_cmd)
         info = self.cur.fetchall()
@@ -262,8 +261,7 @@ class SQLDatabase():
             class_code = class_info
             class_name = info[0][0]
 
-        class_info.title()
-        is_name_cmd = f"SELECT Classes.class_code, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_name='{class_info}'"
+        is_name_cmd = f"SELECT Classes.class_code, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_name='{class_info.title()}'"
 
         self.execute(is_name_cmd)
         info = self.cur.fetchall()
@@ -280,7 +278,6 @@ class SQLDatabase():
             class_name = class_info
             class_code = info[0][0]
 
-
         if not sql_cmd:
             return del_type, "", ""
 
@@ -288,6 +285,43 @@ class SQLDatabase():
         self.commit()
 
         return del_type, class_code, class_name
+
+    def join_class(self, class_info, username):
+        result_type = 0
+        class_name = ""
+        class_code = ""
+
+        is_code_cmd = f"SELECT class_name FROM Classes WHERE class_code='{class_info.upper()}'"
+        self.execute(is_code_cmd)
+        info = self.cur.fetchone()
+        if info:
+            result_type = 1
+            class_code = class_info
+            class_name = info[0]
+
+        is_name_cmd = f"SELECT class_code FROM Classes WHERE class_name='{class_info.title()}'"
+        self.execute(is_name_cmd)
+        info = self.cur.fetchone()
+        if info:
+            result_type = 1
+            class_name = class_info
+            class_code = info[0]
+
+        if not result_type:
+            return result_type, class_code, class_name
+
+        reenroll = f"SELECT 1 FROM Enrollments WHERE student_username='{username}' AND class_code='{class_code}'"
+
+        self.execute(reenroll)
+        if self.cur.fetchone():
+            return -1, class_code.upper(), class_name.title()  # user is already enrolled
+
+        enroll = f"INSERT INTO Enrollments VALUES('{class_code.upper()}', '{username}', 1)"
+        self.execute(enroll)
+        self.commit()
+
+        return result_type, class_code.upper(), class_name.title()
+
 
 
     def get_classes(self, username):
@@ -342,6 +376,29 @@ class SQLDatabase():
         student_index = random.randint(0, len(students) - 1)
 
         return students[student_index]
+
+    # -----------------------------------------------------------------------------
+    # Posts
+    # -----------------------------------------------------------------------------
+
+    def add_post(self, title, username, date,
+                 class_code, tags, body, upload_paths):
+        enroll = f"INSERT INTO Posts VALUES(NULL, '{title}', '{username}', '{date}', '{class_code}', '{tags}', '{body}', '{upload_paths}', 0)"
+        self.execute(enroll)
+        self.commit()
+        return self.cur.lastrowid
+
+    def get_post_from_id(self, username, post_id):
+        get_post = f"SELECT * FROM Posts WHERE post_id='{post_id}'"
+
+        self.execute(get_post)
+        data = self.cur.fetchone()
+        if not data:
+            return 0, None
+        elif data[2] == username:
+            return 2, data
+        else:
+            return 1, data
 
     # -----------------------------------------------------------------------------
     # Friend Handling
@@ -439,25 +496,6 @@ class SQLDatabase():
             return False
         return result
 
-    # def get_mutual_friends(self, username):
-    #     """
-    #         Get the usernames of all of username's friends who do consider
-    #         username a friend as well. (IN PROGRESS)
-    #     """
-    #     friend_ids_cmd = """SELECT U.id UserID, U.username AS Username, F.Username AS FriendUsername
-    #                         FROM Users AS U
-    #                         JOIN Friends AS UtoF ON UtoF.user_id1 = U.id
-    #                         JOIN Users AS F ON F.id = UtoF.user_id2
-    #                         WHERE U.username = "{username}";
-    #                         """
-
-    #     friend_ids_cmd = friend_ids_cmd.format(username=username)
-
-    #     self.execute(friend_ids_cmd)
-    #     if not self.cur.fetchall():
-    #         return None
-
-    #     return self.cur.fetchall()
 
     # -----------------------------------------------------------------------------
     # Chat Backlog

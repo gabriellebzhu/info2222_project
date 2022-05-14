@@ -7,7 +7,7 @@ if (loggedIn === "True") {
     if (isAdmin === "True") {
         addMenuItem("/manage", "Manage");
     }
-    addMenuItem("/profile", "Settings");
+    addMenuItem("/profile", "Profile");
     addMenuItem("/logout", "Logout");
 } else {
     addMenuItem("/login", "Login");

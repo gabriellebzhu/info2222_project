@@ -524,6 +524,13 @@ def view_source(source):
     return static_file(source, root='uploads/')
 
 
+def home(username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    return page_view("home")
+
+
 # -----------------------------------------------------------------------------
 # About
 # -----------------------------------------------------------------------------

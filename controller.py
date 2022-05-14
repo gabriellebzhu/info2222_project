@@ -314,6 +314,11 @@ def manage_classes(class_code):
         return model.manage_class_unmute(username, class_code, to_mute)
 
 
+@app.route('/home')
+def home():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.home(username)
+
 
 # -----------------------------------------------------------------------------
 

@@ -28503,7 +28503,7 @@ var parse_response = function(response) {
   if (response.success === '1') {
     window.sessionStorage.setItem("loggedIn", "True");
     window.sessionStorage.setItem("isAdmin", response.isAdmin);
-      window.location.href = "/posts";
+      window.location.href = "/home";
   } else {
       document.getElementById('login-validity').innerHTML = 'Username and password combination are incorrect';
       document.getElementById('login-validity').classList.add("bad-login-animation");

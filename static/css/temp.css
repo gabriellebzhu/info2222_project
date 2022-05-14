@@ -83,13 +83,13 @@ center {
 .home-page {
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
-    position: absolute;
-    top: 30%;
+    justify-content: space-evenly;
+    margin-top: 15%;
 }
 
 .home-page > div{
     width: 25%;
+    max-width: 15rem;
     display: flex;
     flex-direction: column;
     align-items: center;

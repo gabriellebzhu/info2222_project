@@ -453,7 +453,7 @@ class SQLDatabase():
 
     def unmute(self, class_code, students):
         for student in students:
-            cmd = f"delete from into Muted where class_code='{class_code}' and student_username='{student}')"
+            cmd = f"delete from Muted where class_code='{class_code}' and student_username='{student}')"
             self.execute(cmd)
             self.commit()
 

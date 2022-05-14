@@ -1,0 +1,30 @@
+<center>
+    <div class="home-page">
+        <div onclick="gotopage('posts')">
+            <p>View resources, join classes, and make posts</p>
+            <button onclick="gotopage('posts')">
+                Go to Forum
+            </button>
+        </div>
+        
+        <div onclick="gotopage('friends')">
+            <p>Add friends and chat with classmates,</p>
+            <button onclick="gotopage('friends')">
+                Go to Chats
+            </button>
+        </div>
+
+        <div onclick="gotopage('profile')">
+            <p>View your profile</p>
+            <button onclick="gotopage('profile')">
+                Go to Profile
+            </button>
+        </div>
+
+    </div>
+</center>
+<script>
+    function gotopage(url) {
+        document.location.href = "/" + url
+    }
+</script>

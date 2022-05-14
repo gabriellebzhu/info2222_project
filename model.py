@@ -157,7 +157,7 @@ def add_random_friend(username):
         friend_ids, friends = db.get_one_way_friends(username)
         classes = db.get_classes(username)
         if not classes:
-            add_msg = "You are not yet enrolled in any classes."
+            add_msg = "You are not yet enrolled in any classes. <a href=\"/posts\">Click here</a> to add a class."
             return page_view("friends/populateFriends", ext=".tpl", username=username,
                              friend_usernames=friends, friend_ids=friend_ids,
                              add_msg=add_msg, err_msg="")
@@ -522,6 +522,13 @@ def get_save_path(upload):
 
 def view_source(source):
     return static_file(source, root='uploads/')
+
+
+def home(username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    return page_view("home")
 
 
 # -----------------------------------------------------------------------------

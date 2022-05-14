@@ -3,22 +3,23 @@
     <div class="left-column" id="posts-filter">
 
         <form action="/posts/show" method="post">
+            <h3>Filter Posts</h3>
             % if len(classes) == 0:
                 <p>You currently have not joined any classes. There are no resources to view.</p>
             % else:
-                <div class="filter-entry" id="filter-class">
-                    <p>Select classes to show:</p>
+                <button type="button" class="accordion">Filter by Class</button>
+                <div class="filter-entry panel" id="filter-class">
+                    <p class="tooltip">Select classes to show:</p>
                     % for i in range(0, len(classes)):
                         <div class="select">
-                            <input type="checkbox" id="class{{i}}" name="class-choice" value="{{!classes[i]}}">
+                            <input type="checkbox" id="class{{i}}" name="class-choice" value="{{!classes[i]}}" checked>
                             <label for="class{{i}}">{{!classes[i]}}</label><br>
                         </div>
                     % end
                 </div>
 
-                <div class="filter-entry" id="filter-author">
-                    <p>Select the types of author</p>
-
+                <button type="button" class="accordion">Filter by Author</button>
+                <div class="filter-entry panel" id="filter-class">
                     <div class="select">
                         <input type="checkbox" id="filter-staff" name="filter-choice" value="1">
                         <label for="filter-staff">Staff</label><br>
@@ -30,8 +31,8 @@
                     </div>
                 </div>
 
-                <div class="filter-entry" id="filter-tags">
-                    <p>Select tags:</p>
+                <button type="button" class="accordion">Filter by Tag</button>
+                <div class="filter-entry panel" id="filter-class">
                     % for i in range(0, len(tags)):
                         <div class="select">
                             <input type="checkbox" id="tags{{i}}" name="tag-choice" value="{{!tags[i]}}">
@@ -39,12 +40,14 @@
                         </div>
                     % end
                     <div class="select">
-                        <input type="text" id="tag-search" name="tag-search" placeholder="Tags (space-separated)">
+                        <p class="tooltip">Enter other tags separated by spaces</p>
+                        <input type="text" id="tag-search" name="tag-search" placeholder="tag1 tag2">
                     </div>
                 </div>
 
-                <div class="filter-entry" id="filter-search">
-                    <p>Search all fields with regex:</p>
+                <button type="button" class="accordion">Search (regex)</button>
+                <div class="filter-entry panel" id="filter-class">
+                    <p class="tooltip">Search all fields with regex:</p>
                     <div class="search">
                         <input type="text" id="search" name="search" placeholder="Regular Expression">
                     </div>
@@ -52,7 +55,9 @@
 
 
                 <input type="hidden" name="post-type" value="post-filter"/>
+                <div id="filter-submit">
                 <input type="submit" value="Submit">
+                </div>
 
             % end
         </form>
@@ -86,10 +91,40 @@
             </form>
         </div>
 
-        <div class="entry">
+        <div class="entry" id="create-post-button" onclick="toNew()">
             <h3><a href="/posts/new">Create a post</a></h3>
         </div>
     </div>
 
 </div>
 </center>
+<script>
+    function toNew() {
+        document.location.href = "posts/new";
+    }
+
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+    acc[i].addEventListener("click", function(event) {
+        /* Toggle between adding and removing the "active" class,
+        to highlight the button that controls the panel */
+        this.classList.toggle("active");
+
+        /* Toggle between hiding and showing the active panel */
+        var panel = this.nextElementSibling;
+        
+        if (panel.style.display === "flex") {
+        panel.style.display = "none";
+        } else {
+        panel.style.display = "flex";
+        }
+        if (panel.style.maxHeight) {
+            panel.style.maxHeight = null;
+        } else {
+            panel.style.maxHeight = panel.scrollHeight + "px";
+        }
+    });
+    } 
+</script>

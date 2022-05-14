@@ -96,13 +96,17 @@ center {
 .right-column {
     float: right;
     min-width: 70%;
-    width: calc(70% + 20rem);
+    width: 75%;
     background: #2c2e2f;
 
 }
 
 .right-column > .entry{
     width: 75%;
+}
+
+.right-column > .entry:first-child{
+    margin-top: 3rem;
 }
 
 #mute-ban-section {
@@ -117,11 +121,12 @@ center {
 
 .left-column {
     float: left;
-    width: 30%;
+    width: 25%;
     background: #323536;
     height: max-content;
     min-height: 93vh;
-    max-width: 20rem;
+    border: 0.5rem solid #323536;
+
 }
 
 #message-form {
@@ -450,11 +455,68 @@ label {
 
 
 .filter-entry {
-    margin: 1rem;
+    /* margin: 1rem; */
+    margin-top: 0;
     display: flex;
     justify-content: left;
     text-align: left;
     flex-direction: column;
+}
+
+.accordion {
+    background-color: #323536;
+    color: #82d5ad;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    outline: none;
+    transition: 0.2s;
+    font-size: medium;
+    margin-top: 1rem;
+}
+  
+  /* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .accordion:hover {
+    background-color: #2c2e2f;
+}
+
+.accordion:after {
+    content: '\25BA'; /* Unicode character for "plus" sign (+) */
+    display: inline-block;
+    font-size: 13px;
+    transform: rotate(0);
+    transition: transform 0.2s;
+    color: #5b7467;
+    float: right;
+    margin-left: 5px;
+
+}
+
+.active:after {
+    content: "\25BA";
+    display: inline-block;
+    transform: rotate(90deg);
+}
+
+.panel {
+    padding: 0 2rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: 0.2s ease-out;
+    background-color: #2c2e2f;
+}
+
+.panel > :last-child{
+padding-bottom: 1rem;
+}
+
+
+.tooltip {
+    margin: 0.2rem 0;
+    font-size: 12pt;
+    color: #acb6bb;
 }
 
 #filtered-section {
@@ -533,6 +595,10 @@ label {
     padding: 1rem;
 }
 
+#filter-submit {
+    margin-bottom: 4rem;
+    margin-top: 1rem;
+}
 
 /* #class-join-section > :last-child {
     position: fixed;

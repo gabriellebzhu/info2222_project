@@ -101,6 +101,20 @@ center {
 
 }
 
+.right-column > .entry{
+    width: 75%;
+}
+
+#mute-ban-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.select-students {
+    min-width: 40%;
+}
+
 .left-column {
     float: left;
     width: 30%;

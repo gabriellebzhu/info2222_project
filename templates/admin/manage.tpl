@@ -37,16 +37,16 @@
               <input type="hidden" name="manage-type" value="add-class"/>
               <button type="submit">Create</button>
             </form>
-          </div>
+        </div>
       
-          <div class="entry">
-            <p>Remove a class and archive all posts. Enter the class code.</p>
-            <form name="add-class" action="/manage" method="post">
-                <input name="class-info-input" autocomplete="off">
-                <input type="hidden" name="manage-type" value="del-class"/>
-                <button type="submit">Delete</button>
-            </form>
-          </div>
+        <div class="entry">
+          <p>Remove a class and archive all posts. Enter the class code.</p>
+          <form name="add-class" action="/manage" method="post">
+              <input name="class-info-input" autocomplete="off">
+              <input type="hidden" name="manage-type" value="del-class"/>
+              <button type="submit">Delete</button>
+          </form>
+        </div>
     </div>
 
 </div>

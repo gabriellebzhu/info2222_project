@@ -118,7 +118,7 @@ def get_login_controller():
 
 
 # Display the register page
-@app.get('/register')
+@app.get('/join')
 def get_register_controller():
     '''
         get_login
@@ -287,6 +287,32 @@ def manage_action():
     elif manage_type == "del-class":
         class_info = request.forms.get('class-info-input')
         return model.del_class(class_info, username)
+
+
+@app.route('/manage/<class_code:path>')
+def manage_classes(class_code):
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.manage_class_view(username, class_code)
+
+
+@app.post('/manage/<class_code:path>')
+def manage_classes(class_code):
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    manage_type = request.forms.get("manage-type")
+
+    if manage_type == 'ban-student':
+        to_ban = request.forms.getall("ban-students")
+        return model.manage_class_ban(username, class_code, to_ban)
+    elif manage_type == 'mute-student':
+        to_mute = request.forms.getall("mute-students")
+        return model.manage_class_mute(username, class_code, to_mute)
+    elif manage_type == 'unban-student':
+        to_ban = request.forms.getall("unban-students")
+        return model.manage_class_unban(username, class_code, to_ban)
+    elif manage_type == 'mute-student':
+        to_mute = request.forms.getall("unmute-students")
+        return model.manage_class_unmute(username, class_code, to_mute)
+
 
 
 # -----------------------------------------------------------------------------

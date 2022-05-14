@@ -5,6 +5,7 @@
     It should exist as a separate layer to any database or data structure that you might be using
     Nothing here should be stateful, if it's stateful let the database handle it
 '''
+from calendar import c
 from fileinput import filename
 import json
 from pydoc import classname
@@ -174,6 +175,12 @@ def add_random_friend(username):
                                  friend_usernames=friends, friend_ids=friend_ids,
                                  add_msg=add_msg, err_msg="")
         add_friend(username, random_usrname)
+        friend_ids, friends = db.get_one_way_friends(username)
+        add_msg = f"Success! You are now friends with {random_usrname}."
+        return page_view("friends/populateFriends", ext=".tpl", username=username,
+                         friend_usernames=friends, friend_ids=friend_ids,
+                         add_msg=add_msg, err_msg="")
+        
 
 
 def friend_list(username):
@@ -354,13 +361,49 @@ def join_class(class_info, username):
         msg = f"You are already enrolled in {class_code}: {class_name}"
         return page_view("classes/join", ext=".tpl", username=username,
                          classes=classes, msg=msg, err_msg="", tags=tags)
+    elif check == -2:
+        msg = f"You were banned from {class_code}: {class_name}"
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="", tags=tags)
     elif check == 1:
         msg = f"You have successfully enrolled in {class_code}: {class_name}."
         return page_view("classes/join", ext=".tpl", username=username,
                          classes=classes, msg=msg, err_msg="", tags=tags)
 
 
+def manage_class_view(username, class_code):
+    if username and db.get_is_admin(username):
+        pass
+    elif username:
+        return page_view("invalid", reason="You do not have access to this page.")
+    else:
+        return page_view("invalid", reason="Please log in before viewing this page.")
 
+    classes = db.get_admin_classes(username)
+    students = db.get_students(class_code)
+    banned = db.get_banned(class_code)
+    muted = db.get_muted(class_code)
+
+    return page_view("admin/manageClass", ext='.tpl',
+                     students=students, banned=banned, muted=muted,
+                     username=username, classes=classes,
+                     class_code=class_code)
+
+def manage_class_ban(username, class_code, students):
+    db.ban(class_code, students)
+    return manage_class_view(username, class_code)
+
+def manage_class_mute(username, class_code, students):
+    db.mute(class_code, students)
+    return manage_class_view(username, class_code)
+
+def manage_class_unban(username, class_code, students):
+    db.unban(class_code, students)
+    return manage_class_view(username, class_code)
+
+def manage_class_unmute(username, class_code, students):
+    db.unmute(class_code, students)
+    return manage_class_view(username, class_code)
 
 # -----------------------------------------------------------------------------
 # Posts
@@ -384,6 +427,7 @@ def new_post_form(username):
 
     classes = db.get_classes(username)
     classes += db.get_admin_classes(username)
+    classes = [elem for elem in classes if elem not in db.get_muted_classes(username)]
     return page_view("classes/newPost", ext=".tpl", username=username, classes=classes,
                      success="0", post_id=None)
 
@@ -426,6 +470,9 @@ def show_filtered(username, classes, author_types, tags, search_term):
 
     data = db.filter(username, classes, author_types, tags, search_term)
 
+    if not classes:
+        classes = ["none"]
+
     if (not author_types) or len(author_types) == 2:
         author_query = "Staff OR Student"
     elif "1" in author_types:
@@ -436,9 +483,11 @@ def show_filtered(username, classes, author_types, tags, search_term):
     if not tags:
         tags = ['any']
     if search_term:
-        search_query = f"<br>AND Any field contains: {search_term}"
+        search_query = f"<br>AND Any field contains: '{search_term}'"
+    else:
+        search_query = f"<br>AND Any field contains: anything"
 
-    query = f"<br>Class Code:{' OR '.join(classes)}<br>AND Author Types: {author_query}<br>AND tag:{' OR '.join(tags)}{search_query}"
+    query = f"<br>(Class Code:{' OR '.join(classes)})<br>AND (Author Types: {author_query})<br>AND (tag:{' OR '.join(tags)})({search_query})"
 
     all_classes = db.get_classes(username)
     all_classes += db.get_admin_classes(username)

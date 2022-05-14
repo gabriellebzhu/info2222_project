@@ -1,4 +1,4 @@
-from random import random
+import random
 import sqlite3
 import os
 import re
@@ -75,6 +75,19 @@ class SQLDatabase():
 
         tag_col = """tag TEXT, freq INTEGER"""
         self.create_table("Tags", tag_col)
+
+        liked_col = """post_id INTEGER, username TEXT"""
+        self.create_table("Liked", liked_col)
+
+        muted = """class_code TEXT, student_username TEXT"""
+        self.create_table("Muted", muted)
+
+        banned = """class_code TEXT, student_username TEXT"""
+        self.create_table("Banned", banned)
+
+        profile_col = """username TEXT, year TEXT, hometown TEXT, majors TEXT, public INTEGER"""
+        self.create_table("Profiles", profile_col)
+
 
     def create_table(self, name, columns):
         self.cur.execute("""SELECT count(name)
@@ -311,6 +324,9 @@ class SQLDatabase():
         if not result_type:
             return result_type, class_code, class_name
 
+        if username in self.get_banned(class_code):
+            return -2, class_code, class_name
+
         reenroll = f"SELECT 1 FROM Enrollments WHERE student_username='{username}' AND class_code='{class_code}'"
 
         self.execute(reenroll)
@@ -357,26 +373,90 @@ class SQLDatabase():
     def get_random_user(self, username, class_code):
         sql_query = """
                 SELECT student_username
-                FROM Enrollments
-                WHERE class_code = '{class_code}'
-                AND visible=1
+                    FROM Enrollments
+                    WHERE class_code = '{class_code}'
+                    AND visible=1
+                    AND student_username != '{username}'
 
                 EXCEPT
 
-                SELECT user_id2
-                FROM Friends
-                WHERE user_id1='{username}'
+                SELECT * FROM (
+                    SELECT u1.username from Friends 
+                        INNER JOIN Users as u1 ON Friends.user_id1 = u1.id 
+                        INNER JOIN Users as u2 ON Friends.user_id2 = u2.id 
+                        WHERE u2.username = '{username}'
+                    UNION
+                    SELECT u2.username from Friends 
+                        INNER JOIN Users as u1 ON Friends.user_id1 = u1.id 
+                        INNER JOIN Users as u2 ON Friends.user_id2 = u2.id 
+                        WHERE u1.username = '{username}'
+                )
+
             """
 
         sql_query = sql_query.format(class_code=class_code, username=username)
 
         self.execute(sql_query)
         students = [student[0] for student in self.cur.fetchall()]
+        print(f"from {class_code}, get {students}")
         if len(students) < 1:
             return None
         student_index = random.randint(0, len(students) - 1)
 
         return students[student_index]
+
+    def get_students(self, class_code):
+        cmd = f"Select student_username FROM Enrollments WHERE class_code='{class_code}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def get_banned(self, class_code):
+        cmd = f"Select student_username FROM Banned WHERE class_code='{class_code}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def get_muted(self, class_code):
+        cmd = f"Select student_username FROM Muted WHERE class_code='{class_code}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+    
+    def get_muted_classes(self, username):
+        cmd = f"Select class_code FROM Muted WHERE student_username='{username}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def ban(self, class_code, students):
+        for student in students:
+            cmd = f"Insert into Banned Values('{class_code}', '{student}')"
+            self.execute(cmd)
+            self.commit()
+
+            cmd = f"Delete from Enrollments Where class_code='{class_code}' and student_username='{student}'"
+            self.execute(cmd)
+            self.commit()
+
+    def unban(self, class_code, students):
+        for student in students:
+            cmd = f"Delete from Banned Where class_code='{class_code}' and student_username='{student}'"
+            self.execute(cmd)
+            self.commit()
+
+    def mute(self, class_code, students):
+        for student in students:
+            cmd = f"Insert into Muted Values('{class_code}', '{student}')"
+            self.execute(cmd)
+            self.commit()
+
+    def unmute(self, class_code, students):
+        for student in students:
+            cmd = f"delete from into Muted where class_code='{class_code}' and student_username='{student}')"
+            self.execute(cmd)
+            self.commit()
+
 
     # -----------------------------------------------------------------------------
     # Posts

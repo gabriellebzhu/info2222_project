@@ -34,7 +34,7 @@
             {{!body}}
         </div>
 
-        <div class="post-view-entry" id="post-view-tags">
+        <div class="post-view-entry post-view-tags" id="post-view-tags">
             <div class="tag tag-view-class" id="post-view-class">
                 <p>{{!post_class}}</p>
             </div>

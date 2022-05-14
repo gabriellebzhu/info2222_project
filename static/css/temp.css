@@ -6,6 +6,11 @@ a:hover {
     color: rgb(130, 213, 173);
 }
 
+a:active {
+    background-color: #1d1e1f;
+    color: #3ecbd0;
+}
+
 ul {
     list-style-type: none;
     margin: 0;
@@ -90,14 +95,19 @@ center {
 
 .right-column {
     float: right;
-    width: 70%;
+    min-width: 70%;
+    width: calc(70% + 20rem);
     background: #2c2e2f;
+
 }
 
 .left-column {
     float: left;
     width: 30%;
     background: #323536;
+    height: max-content;
+    min-height: 93vh;
+    max-width: 20rem;
 }
 
 #message-form {
@@ -351,18 +361,18 @@ label {
     text-align: left;
 }
 
-#post-view-tags {
-    justify-content: start;
-    flex-wrap: wrap;
-    gap: 0.2rem 1rem;
-    margin: 1rem 0 8rem 0;
-}
-
 
 .post-view-entry {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+}
+
+.post-view-tags {
+    justify-content: start;
+    flex-wrap: wrap;
+    gap: 0.2rem 1rem;
+    margin: 1rem 0 8rem 0;
 }
 
 
@@ -401,6 +411,17 @@ label {
     border-color: #af81ff;
 }
 
+.tag-filtered {
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+    justify-content: start;
+    gap: 0.2rem 1rem ;
+}
+
+.filtered {
+    margin-top: 1rem;
+}
+
 /* #post-view-attachments > * {
     margin: 0rem 2rem;
 }
@@ -412,6 +433,64 @@ label {
 #post-view-attachments > :last-child {
     margin-right: 0rem;
 } */
+
+
+.filter-entry {
+    margin: 1rem;
+    display: flex;
+    justify-content: left;
+    text-align: left;
+    flex-direction: column;
+}
+
+#filtered-section {
+    margin: 0 2rem;
+}
+
+#filtered-section * {
+    text-align: start;
+}
+
+.filtered-entry {
+    border: 2px solid #82d5ad;
+    border-radius: 5px;
+    margin: 1rem 0;
+    padding: 1rem 0.5rem;
+}
+
+.filtered-entry:hover {
+    cursor: pointer;
+    box-shadow: 2px 2px 0px 1px #82d5ad;
+    transform: translate(-2px,-2px);
+}
+
+.filtered-entry:active {
+    cursor: pointer;
+    box-shadow: 1px 1px 0px 1px #82d5ad;
+    transform: translate(-1px,-1px);
+}
+
+.filtered-entry p, .filtered-entry h3 {
+    margin: 0;
+}
+
+#filtered-title-id {
+    display: flex;
+    flex-direction: row;
+    gap: 0.2rem 0.4rem;
+    align-items: center;
+}
+
+#filtered-meta {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.filtered-id {
+    color: #5b7467;
+}
+
 
 @keyframes spin {
     0% { transform: rotate(0deg); }

@@ -345,18 +345,19 @@ def join_class(class_info, username):
 
     check, class_code, class_name = db.join_class(class_info, username)
     classes = db.get_classes(username)
+    tags = db.five_popular_tags()
     if check == 0:
         msg = f"No class with the code or name '{class_info}'"
         return page_view("classes/join", ext=".tpl", username=username,
-                         classes=classes, msg=msg, err_msg="")
+                         classes=classes, msg=msg, err_msg="", tags=tags)
     elif check == -1:
         msg = f"You are already enrolled in {class_code}: {class_name}"
         return page_view("classes/join", ext=".tpl", username=username,
-                         classes=classes, msg=msg, err_msg="")
+                         classes=classes, msg=msg, err_msg="", tags=tags)
     elif check == 1:
         msg = f"You have successfully enrolled in {class_code}: {class_name}."
         return page_view("classes/join", ext=".tpl", username=username,
-                         classes=classes, msg=msg, err_msg="")
+                         classes=classes, msg=msg, err_msg="", tags=tags)
 
 
 
@@ -372,8 +373,9 @@ def show_posts(username):
 
     classes = db.get_classes(username)
     classes += db.get_admin_classes(username)
+    tags = db.five_popular_tags()
 
-    return page_view("classes/join", ext=".tpl", username=username, classes=classes, msg="", err_msg="")
+    return page_view("classes/join", ext=".tpl", username=username, classes=classes, msg="", err_msg="", tags=tags)
 
 
 def new_post_form(username):
@@ -418,6 +420,34 @@ def create_post(post_title, username, date,
     return page_view("redirect", ext=".tpl", redirect_to=f"/posts/{post_id}", prev="create")
 
 
+def show_filtered(username, classes, author_types, tags, search_term):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    data = db.filter(username, classes, author_types, tags, search_term)
+
+    if (not author_types) or len(author_types) == 2:
+        author_query = "Staff OR Student"
+    elif "1" in author_types:
+        author_query = "Staff"
+    else:
+        author_query = "Student"
+
+    if not tags:
+        tags = ['any']
+    if search_term:
+        search_query = f"<br>AND Any field contains: {search_term}"
+
+    query = f"<br>Class Code:{' OR '.join(classes)}<br>AND Author Types: {author_query}<br>AND tag:{' OR '.join(tags)}{search_query}"
+
+    all_classes = db.get_classes(username)
+    all_classes += db.get_admin_classes(username)
+    all_tags = db.five_popular_tags()
+
+    return page_view("classes/filtered", ext='.tpl', data=data, query=query,
+                     username=username, classes=all_classes, tags=all_tags)
+
+
 def get_save_path(upload):
     name, ext = os.path.splitext(upload.filename)
 
@@ -442,7 +472,6 @@ def get_save_path(upload):
 
 
 def view_source(source):
-    print("hey1:", source)
     return static_file(source, root='uploads/')
 
 

@@ -61,35 +61,65 @@
 
 
 
-    <div class="right-column" id="class-join-section">
-        % if msg:
-        <div class="entry">
-          <p>{{!msg}}</p>
-        </div>
+    <div class="right-column" id="filtered-section">
+        <p>Your query was: <br>
+            <span>{{!query}}</span>
+        </p>
+
+        % if len(data) == 0:
+            <div class="filtered-entry">
+                <p>No entries found.</p>
+            </div>
+        % else:
+            % for entry in data:
+                <div class="filtered-entry" onclick="toPost('{{!entry[0]}}')">
+                    <div id="filtered-title-id">
+                        <p class="filtered-id">#{{!entry[0]}}</p>
+                        <h3 class="filtered-title">{{!entry[1]}}</h3>
+                    </div>
+                    <div id="filtered-meta">
+                        <p>{{!entry[2]}}</p>
+                        <p>{{!entry[3]}}</p>
+                    </div>
+                    <div class="post-view-entry tag-filtered" id="post-view-tags">
+                        <div class="tag tag-view-class" id="post-view-class">
+                            <p>{{!entry[4]}}</p>
+                         </div>
+            
+                        % for i in range(0, len(entry[5].split())):
+                            <div class="tag tag-view" id="post-view-tag{i}">
+                                <p>{{!entry[5].split()[i]}}</p>
+                            </div>
+                        % end
+                    </div>
+
+                    <div class="filtered">
+                        % if (len(entry[6]) > 100):
+                        {{entry[6][0:100]}} ...
+                        % else:
+                        {{entry[6]}}
+                        % end
+                    </div>
+
+                    <div class="filtered">
+                        % if (len(entry[7].split()) > 0):
+                            Attachments: {{len(entry[7].split())}}
+                        % end
+
+                        % if (entry[8] > 0):
+                            Likes: {{entry[8]}}
+                        % end
+                    </div>
+
+                </div>
+            % end
         % end
-
-        <div class="entry">
-            <p>Join a class. Enter the class code or the class name.</p>
-            <form name="join-class" action="/posts" method="post">
-              <input name="class-info-input" autocomplete="off">
-              <input type="hidden" name="post-type" value="join-class"/>
-              <button type="submit">Join</button>
-            </form>
-        </div>
-
-        <div class="entry">
-            <p>Leave a class. Enter the class code or the class name</p>
-            <form name="leave-class" action="/manage" method="post">
-                <input name="class-info-input" autocomplete="off">
-                <input type="hidden" name="post-type" value="leave-class"/>
-                <button type="submit">Delete</button>
-            </form>
-        </div>
-
-        <div class="entry">
-            <h3><a href="/posts/new">Create a post</a></h3>
-        </div>
     </div>
 
 </div>
 </center>
+<script>
+    function toPost(id) {
+        document.location.href = "posts/" + id;
+    }
+</script>

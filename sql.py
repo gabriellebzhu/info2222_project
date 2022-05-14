@@ -1,10 +1,7 @@
-from getopt import getopt
-from pydoc import classname
 from random import random
-import secrets
 import sqlite3
 import os
-from tkinter.messagebox import NO
+import re
 
 import sec_helper as sec
 
@@ -24,6 +21,7 @@ class SQLDatabase():
     def __init__(self, database_arg=":memory:"):
         self.conn = sqlite3.connect(database_arg)
         self.cur = self.conn.cursor()
+        self.conn.create_function("REGEXP", 2, SQLDatabase.regexp)
 
     # SQLite 3 does not natively support multiple commands in a single statement
     # Using this handler restores this functionality
@@ -74,6 +72,9 @@ class SQLDatabase():
 
         post_cols = """post_id INTEGER PRIMARY KEY, title TEXT, author_username TEXT, date TEXT, class_code TEXT, tags TEXT, body TEXT, upload TEXT, likes INTEGER"""
         self.create_table("Posts", post_cols)
+
+        tag_col = """tag TEXT, freq INTEGER"""
+        self.create_table("Tags", tag_col)
 
     def create_table(self, name, columns):
         self.cur.execute("""SELECT count(name)
@@ -296,16 +297,16 @@ class SQLDatabase():
         info = self.cur.fetchone()
         if info:
             result_type = 1
-            class_code = class_info
-            class_name = info[0]
+            class_code = class_info.upper()
+            class_name = info[0].title()
 
         is_name_cmd = f"SELECT class_code FROM Classes WHERE class_name='{class_info.title()}'"
         self.execute(is_name_cmd)
         info = self.cur.fetchone()
         if info:
             result_type = 1
-            class_name = class_info
-            class_code = info[0]
+            class_name = class_info.title()
+            class_code = info[0].upper()
 
         if not result_type:
             return result_type, class_code, class_name
@@ -383,10 +384,32 @@ class SQLDatabase():
 
     def add_post(self, title, username, date,
                  class_code, tags, body, upload_paths):
+        tags = self.tag(tags)
         enroll = f"INSERT INTO Posts VALUES(NULL, '{title}', '{username}', '{date}', '{class_code}', '{tags}', '{body}', '{upload_paths}', 0)"
         self.execute(enroll)
         self.commit()
         return self.cur.lastrowid
+
+    def tag(self, tags):
+        tags = list(set(tags.split()))
+        for tag in tags:
+            exists_cmd = f"SELECT 1 from Tags Where tag='{tag}'"
+            self.execute(exists_cmd)
+            if self.cur.fetchone():
+                cmd = f"UPDATE Tags SET freq = freq + 1 WHERE tag='{tag}'"
+            else:
+                cmd = f"INSERT into Tags VALUES('{tag}', 1)"
+            
+            self.execute(cmd)
+            self.commit()
+        return ' '.join(tags)
+
+    def five_popular_tags(self):
+        cmd = "SELECT tag FROM Tags ORDER BY freq DESC, tag ASC LIMIT 5"
+
+        self.execute(cmd)
+        data = [item[0] for item in self.cur.fetchall()]
+        return data
 
     def get_post_from_id(self, username, post_id):
         get_post = f"SELECT * FROM Posts WHERE post_id='{post_id}'"
@@ -399,6 +422,59 @@ class SQLDatabase():
             return 2, data
         else:
             return 1, data
+
+    def get_admins(self):
+        cmd = "SELECT username from Admins"
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def filter(self, username, classes, author_types, tags, search_term):
+        if not classes:
+            classes = self.get_classes(username)
+
+        if not author_types or len(author_types) == 2:
+            author_cmd = ""
+        else:
+            admins = ','.join([f"'{admin}'" for admin in self.get_admins()])
+            if "1" in author_types:
+                author_cmd = f"AND author_username IN ({admins})"
+            else:
+                author_cmd = f"AND author_username NOT IN ({admins})"
+
+        if not search_term:
+            search_term = ".*"
+
+        classes = ','.join([f"'{class_code}'" for class_code in classes])
+        print(classes, author_cmd)
+
+        cmd = """SELECT * FROM Posts
+                    WHERE (title REGEXP '{search_term}'
+                    OR author_username REGEXP '{search_term}'
+                    OR body REGEXP '{search_term}')
+                    AND
+                    (class_code IN ({classes}))
+                {author_cmd}
+                """
+        cmd = cmd.format(search_term=search_term, author_cmd=author_cmd, classes=classes)
+
+        self.execute(cmd)
+        data = self.cur.fetchall()
+
+        if tags:
+            filtered = []
+            for entry in data:
+                tag_data = entry[5].split()
+                for tag in tags:
+                    if tag in tag_data:
+                        filtered.append(entry)
+                        break
+            return filtered
+        else:
+            return data
+
+    def regexp(expr, item):
+        reg = re.compile(expr)
+        return reg.search(item) is not None
 
     # -----------------------------------------------------------------------------
     # Friend Handling
@@ -551,3 +627,4 @@ class SQLDatabase():
             return True
         else:
             return False
+

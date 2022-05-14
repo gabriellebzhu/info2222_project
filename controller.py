@@ -10,6 +10,7 @@ import bottle
 from bottle import route, get, post, error, request, response, static_file, template
 import model
 import sec_helper as sec
+from datetime import datetime
 import json
 
 app = bottle.Bottle()
@@ -117,7 +118,7 @@ def get_login_controller():
 
 
 # Display the register page
-@app.get('/register')
+@app.get('/join')
 def get_register_controller():
     '''
         get_login
@@ -288,7 +289,100 @@ def manage_action():
         return model.del_class(class_info, username)
 
 
+@app.route('/manage/<class_code:path>')
+def manage_classes(class_code):
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.manage_class_view(username, class_code)
 
+
+@app.post('/manage/<class_code:path>')
+def manage_classes(class_code):
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    manage_type = request.forms.get("manage-type")
+
+    if manage_type == 'ban-student':
+        to_ban = request.forms.getall("ban-students")
+        return model.manage_class_ban(username, class_code, to_ban)
+    elif manage_type == 'mute-student':
+        to_mute = request.forms.getall("mute-students")
+        return model.manage_class_mute(username, class_code, to_mute)
+    elif manage_type == 'unban-student':
+        to_ban = request.forms.getall("unban-students")
+        return model.manage_class_unban(username, class_code, to_ban)
+    elif manage_type == 'mute-student':
+        to_mute = request.forms.getall("unmute-students")
+        return model.manage_class_unmute(username, class_code, to_mute)
+
+
+
+# -----------------------------------------------------------------------------
+
+
+@app.route('/posts')
+def show_posts():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.show_posts(username)
+
+
+@app.post('/posts')
+def post_action():
+    post_type = request.forms.get("post-type")
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    if post_type == "join-class":
+        class_info = request.forms.get('class-info-input')
+        return model.join_class(class_info, username)
+    # elif post_type == "del-class":
+    #     class_info = request.forms.get('class-info-input')
+    #     return model.del_class(class_info, username)
+
+
+@app.post("/posts/show")
+def filter_posts():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    classes = request.forms.getall('class-choice')
+    author_types = request.forms.getall('filter-choice')
+    tags = request.forms.getall('tag-choice')
+    tags += request.forms.get('tag-search').split()
+    search_term = request.forms.get('search')
+    return model.show_filtered(username, classes, author_types, tags, search_term)
+
+
+@app.route('/posts/new')
+def new_post():
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    return model.new_post_form(username)
+
+
+@app.post('/posts/new')
+def add_post():
+    post_title = request.forms.get("post-title")
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+    today = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    class_code = request.forms.get("post-class-selector")
+    tags = request.forms.get("post-tags")
+    body = request.forms.get("post-body")
+    uploads = request.files.getall("post-attachments")
+
+    return model.create_post(post_title, username, today,
+                             class_code, tags, body, uploads)
+
+
+@app.route('/posts/<post_id:int>')
+def new_post(post_id):
+    username = request.get_cookie("account", secret=sec.COOKIE_SECRET)
+
+    return model.view_post(username, post_id)
+
+
+@app.route('/uploads/<source:path>')
+def new_post(source=None):
+    if source is not None:
+        return model.view_source(source)
+
+
+
+# 
 # -----------------------------------------------------------------------------
 
 
@@ -304,92 +398,3 @@ def post_debug(cmd):
 @app.error(404)
 def error(error):
     return model.handle_errors(error)
-
-
-
-# TESTINNG SMT OUT!!
-
-# import uuid
-# import inspect
-
-# from gevent import monkey; monkey.patch_all()
-# from gevent.event import Event
-# from beaker.middleware import SessionMiddleware
-
-# cache_size = 200
-# cache = []
-# new_message_event = Event()
-
-# class BeakerPlugin(object):
-#     name = 'beaker'
-
-#     def setup(self, app):
-#         ''' Make sure that other installed plugins don't affect the same
-#             keyword argument.'''
-#         for other in app.plugins:
-#             if not isinstance(other, BeakerPlugin): continue
-#             if other.keyword == self.keyword:
-#                 raise PluginError("Found another beaker session plugin "\
-#                     "with conflicting settings (non-unique keyword).")
-
-#     def apply(self, callback, context):
-#         args = inspect.getargspec(context['callback'])[0]
-#         keyword = 'session'
-#         if keyword not in args:
-#             return callback
-#         def wrapper(*a, **ka):
-#             session = request.environ.get('beaker.session')
-#             ka[keyword] = session
-#             rv = callback(*a, **ka)
-#             session.save()
-#             return rv
-#         return wrapper
-
-
-# @route("/", template='index')
-# def main(session):
-#     global cache
-#     if cache:
-#         session['cursor'] = cache[-1]['id']
-#     return {'messages': cache}
-
-# @app.route('/a/message/new', method='POST')
-# def message_new():
-#     global cache
-#     global cache_size
-#     global new_message_event
-#     name = request.environ.get('REMOTE_ADDR') or 'Anonymous'
-#     forwarded_for = request.environ.get('HTTP_X_FORWARDED_FOR')
-#     if forwarded_for and name == '127.0.0.1':
-#         name = forwarded_for
-#     msg = create_message(name, request.POST.get('body'))
-#     cache.append(msg)
-#     if len(cache) > cache_size:
-#         cache = cache[-cache_size:]
-#     new_message_event.set()
-#     new_message_event.clear()
-#     return msg
-
-# @app.route('/a/message/updates', method='POST')
-# def message_updates(session):
-#     global cache
-#     global new_message_event
-#     cursor = session.get('cursor')
-#     if not cache or cursor == cache[-1]['id']:
-#          new_message_event.wait()
-#     assert cursor != cache[-1]['id'], cursor
-#     try:
-#         for index, m in enumerate(cache):
-#            if m['id'] == cursor:
-#                return {'messages': cache[index + 1:]}
-#         return {'messages': cache}
-#     finally:
-#         if cache:
-#             session['cursor'] = cache[-1]['id']
-#         else:
-#             session.pop('cursor', None)
-
-# def create_message(from_, body):
-#     data = {'id': str(uuid.uuid4()), 'from': from_, 'body': body}
-#     data['html'] = template('message', message=data)
-#     return data

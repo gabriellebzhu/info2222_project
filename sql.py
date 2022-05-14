@@ -1,8 +1,7 @@
-from random import random
-import secrets
+import random
 import sqlite3
 import os
-from tkinter.messagebox import NO
+import re
 
 import sec_helper as sec
 
@@ -22,6 +21,7 @@ class SQLDatabase():
     def __init__(self, database_arg=":memory:"):
         self.conn = sqlite3.connect(database_arg)
         self.cur = self.conn.cursor()
+        self.conn.create_function("REGEXP", 2, SQLDatabase.regexp)
 
     # SQLite 3 does not natively support multiple commands in a single statement
     # Using this handler restores this functionality
@@ -70,10 +70,24 @@ class SQLDatabase():
         enrolled_cols = """class_code TEXT, student_username TEXT, visible INTEGER"""
         self.create_table("Enrollments", enrolled_cols)
 
-        # Add our admin user
-        # salt = os.urandom(16)
-        # hashed = sec.hash_the_pass(admin_password, salt)
-        # self.add_use r('admin', hashed, salt=salt, public_key="test_key", admin=1)
+        post_cols = """post_id INTEGER PRIMARY KEY, title TEXT, author_username TEXT, date TEXT, class_code TEXT, tags TEXT, body TEXT, upload TEXT, likes INTEGER"""
+        self.create_table("Posts", post_cols)
+
+        tag_col = """tag TEXT, freq INTEGER"""
+        self.create_table("Tags", tag_col)
+
+        liked_col = """post_id INTEGER, username TEXT"""
+        self.create_table("Liked", liked_col)
+
+        muted = """class_code TEXT, student_username TEXT"""
+        self.create_table("Muted", muted)
+
+        banned = """class_code TEXT, student_username TEXT"""
+        self.create_table("Banned", banned)
+
+        profile_col = """username TEXT, year TEXT, hometown TEXT, majors TEXT, public INTEGER"""
+        self.create_table("Profiles", profile_col)
+
 
     def create_table(self, name, columns):
         self.cur.execute("""SELECT count(name)
@@ -244,8 +258,7 @@ class SQLDatabase():
         class_name = ""
         class_code = ""
 
-        class_info.upper()
-        is_code_cmd = f"SELECT Classes.class_name, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_code='{class_info}'"
+        is_code_cmd = f"SELECT Classes.class_name, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_code='{class_info.upper()}'"
 
         self.execute(is_code_cmd)
         info = self.cur.fetchall()
@@ -262,8 +275,7 @@ class SQLDatabase():
             class_code = class_info
             class_name = info[0][0]
 
-        class_info.title()
-        is_name_cmd = f"SELECT Classes.class_code, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_name='{class_info}'"
+        is_name_cmd = f"SELECT Classes.class_code, Users.username FROM Classes INNER JOIN Users ON Classes.admin_user_id = Users.id WHERE Classes.class_name='{class_info.title()}'"
 
         self.execute(is_name_cmd)
         info = self.cur.fetchall()
@@ -280,7 +292,6 @@ class SQLDatabase():
             class_name = class_info
             class_code = info[0][0]
 
-
         if not sql_cmd:
             return del_type, "", ""
 
@@ -288,6 +299,46 @@ class SQLDatabase():
         self.commit()
 
         return del_type, class_code, class_name
+
+    def join_class(self, class_info, username):
+        result_type = 0
+        class_name = ""
+        class_code = ""
+
+        is_code_cmd = f"SELECT class_name FROM Classes WHERE class_code='{class_info.upper()}'"
+        self.execute(is_code_cmd)
+        info = self.cur.fetchone()
+        if info:
+            result_type = 1
+            class_code = class_info.upper()
+            class_name = info[0].title()
+
+        is_name_cmd = f"SELECT class_code FROM Classes WHERE class_name='{class_info.title()}'"
+        self.execute(is_name_cmd)
+        info = self.cur.fetchone()
+        if info:
+            result_type = 1
+            class_name = class_info.title()
+            class_code = info[0].upper()
+
+        if not result_type:
+            return result_type, class_code, class_name
+
+        if username in self.get_banned(class_code):
+            return -2, class_code, class_name
+
+        reenroll = f"SELECT 1 FROM Enrollments WHERE student_username='{username}' AND class_code='{class_code}'"
+
+        self.execute(reenroll)
+        if self.cur.fetchone():
+            return -1, class_code.upper(), class_name.title()  # user is already enrolled
+
+        enroll = f"INSERT INTO Enrollments VALUES('{class_code.upper()}', '{username}', 1)"
+        self.execute(enroll)
+        self.commit()
+
+        return result_type, class_code.upper(), class_name.title()
+
 
 
     def get_classes(self, username):
@@ -322,26 +373,188 @@ class SQLDatabase():
     def get_random_user(self, username, class_code):
         sql_query = """
                 SELECT student_username
-                FROM Enrollments
-                WHERE class_code = '{class_code}'
-                AND visible=1
+                    FROM Enrollments
+                    WHERE class_code = '{class_code}'
+                    AND visible=1
+                    AND student_username != '{username}'
 
                 EXCEPT
 
-                SELECT user_id2
-                FROM Friends
-                WHERE user_id1='{username}'
+                SELECT * FROM (
+                    SELECT u1.username from Friends 
+                        INNER JOIN Users as u1 ON Friends.user_id1 = u1.id 
+                        INNER JOIN Users as u2 ON Friends.user_id2 = u2.id 
+                        WHERE u2.username = '{username}'
+                    UNION
+                    SELECT u2.username from Friends 
+                        INNER JOIN Users as u1 ON Friends.user_id1 = u1.id 
+                        INNER JOIN Users as u2 ON Friends.user_id2 = u2.id 
+                        WHERE u1.username = '{username}'
+                )
+
             """
 
         sql_query = sql_query.format(class_code=class_code, username=username)
 
         self.execute(sql_query)
         students = [student[0] for student in self.cur.fetchall()]
+        print(f"from {class_code}, get {students}")
         if len(students) < 1:
             return None
         student_index = random.randint(0, len(students) - 1)
 
         return students[student_index]
+
+    def get_students(self, class_code):
+        cmd = f"Select student_username FROM Enrollments WHERE class_code='{class_code}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def get_banned(self, class_code):
+        cmd = f"Select student_username FROM Banned WHERE class_code='{class_code}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def get_muted(self, class_code):
+        cmd = f"Select student_username FROM Muted WHERE class_code='{class_code}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+    
+    def get_muted_classes(self, username):
+        cmd = f"Select class_code FROM Muted WHERE student_username='{username}'"
+
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def ban(self, class_code, students):
+        for student in students:
+            cmd = f"Insert into Banned Values('{class_code}', '{student}')"
+            self.execute(cmd)
+            self.commit()
+
+            cmd = f"Delete from Enrollments Where class_code='{class_code}' and student_username='{student}'"
+            self.execute(cmd)
+            self.commit()
+
+    def unban(self, class_code, students):
+        for student in students:
+            cmd = f"Delete from Banned Where class_code='{class_code}' and student_username='{student}'"
+            self.execute(cmd)
+            self.commit()
+
+    def mute(self, class_code, students):
+        for student in students:
+            cmd = f"Insert into Muted Values('{class_code}', '{student}')"
+            self.execute(cmd)
+            self.commit()
+
+    def unmute(self, class_code, students):
+        for student in students:
+            cmd = f"delete from into Muted where class_code='{class_code}' and student_username='{student}')"
+            self.execute(cmd)
+            self.commit()
+
+
+    # -----------------------------------------------------------------------------
+    # Posts
+    # -----------------------------------------------------------------------------
+
+    def add_post(self, title, username, date,
+                 class_code, tags, body, upload_paths):
+        tags = self.tag(tags)
+        enroll = f"INSERT INTO Posts VALUES(NULL, '{title}', '{username}', '{date}', '{class_code}', '{tags}', '{body}', '{upload_paths}', 0)"
+        self.execute(enroll)
+        self.commit()
+        return self.cur.lastrowid
+
+    def tag(self, tags):
+        tags = list(set(tags.split()))
+        for tag in tags:
+            exists_cmd = f"SELECT 1 from Tags Where tag='{tag}'"
+            self.execute(exists_cmd)
+            if self.cur.fetchone():
+                cmd = f"UPDATE Tags SET freq = freq + 1 WHERE tag='{tag}'"
+            else:
+                cmd = f"INSERT into Tags VALUES('{tag}', 1)"
+            
+            self.execute(cmd)
+            self.commit()
+        return ' '.join(tags)
+
+    def five_popular_tags(self):
+        cmd = "SELECT tag FROM Tags ORDER BY freq DESC, tag ASC LIMIT 5"
+
+        self.execute(cmd)
+        data = [item[0] for item in self.cur.fetchall()]
+        return data
+
+    def get_post_from_id(self, username, post_id):
+        get_post = f"SELECT * FROM Posts WHERE post_id='{post_id}'"
+
+        self.execute(get_post)
+        data = self.cur.fetchone()
+        if not data:
+            return 0, None
+        elif data[2] == username:
+            return 2, data
+        else:
+            return 1, data
+
+    def get_admins(self):
+        cmd = "SELECT username from Admins"
+        self.execute(cmd)
+        return [item[0] for item in self.cur.fetchall()]
+
+    def filter(self, username, classes, author_types, tags, search_term):
+        if not classes:
+            classes = self.get_classes(username)
+
+        if not author_types or len(author_types) == 2:
+            author_cmd = ""
+        else:
+            admins = ','.join([f"'{admin}'" for admin in self.get_admins()])
+            if "1" in author_types:
+                author_cmd = f"AND author_username IN ({admins})"
+            else:
+                author_cmd = f"AND author_username NOT IN ({admins})"
+
+        if not search_term:
+            search_term = ".*"
+
+        classes = ','.join([f"'{class_code}'" for class_code in classes])
+        print(classes, author_cmd)
+
+        cmd = """SELECT * FROM Posts
+                    WHERE (title REGEXP '{search_term}'
+                    OR author_username REGEXP '{search_term}'
+                    OR body REGEXP '{search_term}')
+                    AND
+                    (class_code IN ({classes}))
+                {author_cmd}
+                """
+        cmd = cmd.format(search_term=search_term, author_cmd=author_cmd, classes=classes)
+
+        self.execute(cmd)
+        data = self.cur.fetchall()
+
+        if tags:
+            filtered = []
+            for entry in data:
+                tag_data = entry[5].split()
+                for tag in tags:
+                    if tag in tag_data:
+                        filtered.append(entry)
+                        break
+            return filtered
+        else:
+            return data
+
+    def regexp(expr, item):
+        reg = re.compile(expr)
+        return reg.search(item) is not None
 
     # -----------------------------------------------------------------------------
     # Friend Handling
@@ -439,25 +652,6 @@ class SQLDatabase():
             return False
         return result
 
-    # def get_mutual_friends(self, username):
-    #     """
-    #         Get the usernames of all of username's friends who do consider
-    #         username a friend as well. (IN PROGRESS)
-    #     """
-    #     friend_ids_cmd = """SELECT U.id UserID, U.username AS Username, F.Username AS FriendUsername
-    #                         FROM Users AS U
-    #                         JOIN Friends AS UtoF ON UtoF.user_id1 = U.id
-    #                         JOIN Users AS F ON F.id = UtoF.user_id2
-    #                         WHERE U.username = "{username}";
-    #                         """
-
-    #     friend_ids_cmd = friend_ids_cmd.format(username=username)
-
-    #     self.execute(friend_ids_cmd)
-    #     if not self.cur.fetchall():
-    #         return None
-
-    #     return self.cur.fetchall()
 
     # -----------------------------------------------------------------------------
     # Chat Backlog
@@ -513,3 +707,4 @@ class SQLDatabase():
             return True
         else:
             return False
+

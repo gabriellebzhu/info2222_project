@@ -5,12 +5,15 @@
     It should exist as a separate layer to any database or data structure that you might be using
     Nothing here should be stateful, if it's stateful let the database handle it
 '''
+from calendar import c
+from fileinput import filename
 import json
+from pydoc import classname
 import view
 import random
 import sql
 
-from bottle import request
+from bottle import request, static_file
 import os
 
 import sec_helper as sec
@@ -172,6 +175,12 @@ def add_random_friend(username):
                                  friend_usernames=friends, friend_ids=friend_ids,
                                  add_msg=add_msg, err_msg="")
         add_friend(username, random_usrname)
+        friend_ids, friends = db.get_one_way_friends(username)
+        add_msg = f"Success! You are now friends with {random_usrname}."
+        return page_view("friends/populateFriends", ext=".tpl", username=username,
+                         friend_usernames=friends, friend_ids=friend_ids,
+                         add_msg=add_msg, err_msg="")
+        
 
 
 def friend_list(username):
@@ -335,6 +344,184 @@ def del_class(class_info, username):
         msg = f"You must be an administrator of {class_code}: {class_name} to delete it."
         return page_view("admin/manage", ext=".tpl", username=username,
                          classes=classes, msg=msg, err_msg="")
+
+
+def join_class(class_info, username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    check, class_code, class_name = db.join_class(class_info, username)
+    classes = db.get_classes(username)
+    tags = db.five_popular_tags()
+    if check == 0:
+        msg = f"No class with the code or name '{class_info}'"
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="", tags=tags)
+    elif check == -1:
+        msg = f"You are already enrolled in {class_code}: {class_name}"
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="", tags=tags)
+    elif check == -2:
+        msg = f"You were banned from {class_code}: {class_name}"
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="", tags=tags)
+    elif check == 1:
+        msg = f"You have successfully enrolled in {class_code}: {class_name}."
+        return page_view("classes/join", ext=".tpl", username=username,
+                         classes=classes, msg=msg, err_msg="", tags=tags)
+
+
+def manage_class_view(username, class_code):
+    if username and db.get_is_admin(username):
+        pass
+    elif username:
+        return page_view("invalid", reason="You do not have access to this page.")
+    else:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    classes = db.get_admin_classes(username)
+    students = db.get_students(class_code)
+    banned = db.get_banned(class_code)
+    muted = db.get_muted(class_code)
+
+    return page_view("admin/manageClass", ext='.tpl',
+                     students=students, banned=banned, muted=muted,
+                     username=username, classes=classes,
+                     class_code=class_code)
+
+def manage_class_ban(username, class_code, students):
+    db.ban(class_code, students)
+    return manage_class_view(username, class_code)
+
+def manage_class_mute(username, class_code, students):
+    db.mute(class_code, students)
+    return manage_class_view(username, class_code)
+
+def manage_class_unban(username, class_code, students):
+    db.unban(class_code, students)
+    return manage_class_view(username, class_code)
+
+def manage_class_unmute(username, class_code, students):
+    db.unmute(class_code, students)
+    return manage_class_view(username, class_code)
+
+# -----------------------------------------------------------------------------
+# Posts
+# -----------------------------------------------------------------------------
+
+
+def show_posts(username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    classes = db.get_classes(username)
+    classes += db.get_admin_classes(username)
+    tags = db.five_popular_tags()
+
+    return page_view("classes/join", ext=".tpl", username=username, classes=classes, msg="", err_msg="", tags=tags)
+
+
+def new_post_form(username):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    classes = db.get_classes(username)
+    classes += db.get_admin_classes(username)
+    classes = [elem for elem in classes if elem not in db.get_muted_classes(username)]
+    return page_view("classes/newPost", ext=".tpl", username=username, classes=classes,
+                     success="0", post_id=None)
+
+
+def view_post(username, post_id):
+    check, data = db.get_post_from_id(username, post_id)
+
+    if not check:
+        return page_view("classes/notFound")
+
+    post_id, title, author, date = data[0], data[1], data[2], data[3]
+    class_code, tags, body, upload_paths, likes = data[4], data[5], data[6], data[7], data[8]
+    tags = tags.split()
+    file_paths = upload_paths.split()
+    file_names = [url.split("/")[-1] for url in file_paths]
+
+    return page_view("classes/postView", ext=".tpl", post_id=post_id, title=title, likes=likes,
+                     post_class=class_code, tags=tags, username=author, date=date,
+                     file_paths=file_paths, file_names=file_names, body=body)
+
+
+def create_post(post_title, username, date,
+                class_code, tags, body, uploads):
+    upload_paths = []
+    for upload in uploads:
+        save_path = get_save_path(upload)
+        upload.save(save_path)
+        upload_paths.append(save_path)
+
+    upload_paths = " ".join(upload_paths)
+
+    post_id = db.add_post(post_title, username, date, class_code, tags, body, upload_paths)
+
+    return page_view("redirect", ext=".tpl", redirect_to=f"/posts/{post_id}", prev="create")
+
+
+def show_filtered(username, classes, author_types, tags, search_term):
+    if not username:
+        return page_view("invalid", reason="Please log in before viewing this page.")
+
+    data = db.filter(username, classes, author_types, tags, search_term)
+
+    if not classes:
+        classes = ["none"]
+
+    if (not author_types) or len(author_types) == 2:
+        author_query = "Staff OR Student"
+    elif "1" in author_types:
+        author_query = "Staff"
+    else:
+        author_query = "Student"
+
+    if not tags:
+        tags = ['any']
+    if search_term:
+        search_query = f"<br>AND Any field contains: '{search_term}'"
+    else:
+        search_query = f"<br>AND Any field contains: anything"
+
+    query = f"<br>(Class Code:{' OR '.join(classes)})<br>AND (Author Types: {author_query})<br>AND (tag:{' OR '.join(tags)})({search_query})"
+
+    all_classes = db.get_classes(username)
+    all_classes += db.get_admin_classes(username)
+    all_tags = db.five_popular_tags()
+
+    return page_view("classes/filtered", ext='.tpl', data=data, query=query,
+                     username=username, classes=all_classes, tags=all_tags)
+
+
+def get_save_path(upload):
+    name, ext = os.path.splitext(upload.filename)
+
+    if ' ' in name:
+        name = name.replace(' ', '_')
+
+    ext = ext[1:]
+
+    path = f"uploads/{ext}/{name}.{ext}"
+    if not os.path.exists(f"uploads/{ext}"):
+        os.mkdir(f"uploads/{ext}")
+
+    if os.path.exists(path):
+        i = 1
+        while True:
+            if not os.path.exists(f"uploads/{ext}/{name}-{i}.{ext}"):
+                path = f"uploads/{ext}/{name}-{i}.{ext}"
+                break
+            i += 1
+
+    return path
+
+
+def view_source(source):
+    return static_file(source, root='uploads/')
 
 
 # -----------------------------------------------------------------------------

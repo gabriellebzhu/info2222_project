@@ -2,7 +2,7 @@ let loggedIn = window.sessionStorage.getItem("loggedIn");
 let isAdmin = window.sessionStorage.getItem("isAdmin");
 
 if (loggedIn === "True") {
-    addMenuItem("/posts", "Posts");
+    addMenuItem("/posts", "Forum");
     addMenuItem("/friends", "Chats");
     if (isAdmin === "True") {
         addMenuItem("/manage", "Manage");

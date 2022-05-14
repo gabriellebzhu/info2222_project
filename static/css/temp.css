@@ -505,6 +505,39 @@ label {
     color: #5b7467;
 }
 
+#create-post-button {
+    border: 2px solid white;
+    margin: 5rem;
+    margin-top: 10rem;
+}
+
+#create-post-button:hover {
+    background-color: #82d6ad;
+    color: white;
+    transform: translate(-2px, -2px);
+    box-shadow: 2px 2px 0 1px white;
+    cursor: pointer;
+}
+
+#create-post-button:active {
+    background-color: #82d6ad;
+    color: white;
+    transform: translate(-1px, -1px);
+    box-shadow: 1px 1px 0 1px white;
+    cursor: pointer;
+}
+
+
+#create-post-button > h3 {
+    margin: 0rem;
+    padding: 1rem;
+}
+
+
+/* #class-join-section > :last-child {
+    position: fixed;
+    bottom: 5%;
+} */
 
 @keyframes spin {
     0% { transform: rotate(0deg); }

@@ -86,10 +86,15 @@
             </form>
         </div>
 
-        <div class="entry">
+        <div class="entry" id="create-post-button" onclick="toNew()">
             <h3><a href="/posts/new">Create a post</a></h3>
         </div>
     </div>
 
 </div>
 </center>
+<script>
+    function toNew() {
+        document.location.href = "posts/new";
+    }
+</script>
